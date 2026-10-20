@@ -28,6 +28,10 @@ The unified student request interface is documented in
 explanation, and lesson-draft intents through the capabilities currently
 implemented, while clearly marking unsupported work.
 
+List questions available for practice with `saemphysics list-questions`, then
+select one by ID using
+`saemphysics interact examples/requests/student_practice.json`.
+
 ## Working foundation
 
 The initial Python vertical slice defines a canonical question record, an exact

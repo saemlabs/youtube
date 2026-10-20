@@ -128,3 +128,54 @@ def test_cli_interactive_interface_routes_student_request(tmp_path, capsys):
     assert response["status"] == "completed"
     assert response["artifact"]["result"]["derivative"] == "2*x"
     assert response["verification"]["status"] == "passed"
+
+
+def test_cli_lists_corpus_questions_without_leaking_answer_keys(capsys):
+    assert main(["list-questions"]) == 0
+
+    captured = capsys.readouterr()
+    response = json.loads(captured.out)
+    assert captured.err == ""
+    assert response["question_count"] == 5
+    assert response["questions"][0]["question_id"] == (
+        "synthetic-constant-acceleration-001"
+    )
+    assert "official_answer" not in response["questions"][0]
+
+
+def test_cli_interacts_with_question_id_from_validated_corpus(tmp_path, capsys):
+    request_path = tmp_path / "practice-request.json"
+    request_path.write_text(
+        json.dumps(
+            {
+                "intent": "practice",
+                "question_id": "synthetic-constant-acceleration-001",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["interact", str(request_path)]) == 0
+
+    captured = capsys.readouterr()
+    response = json.loads(captured.out)
+    assert captured.err == ""
+    assert response["status"] == "ready"
+    assert response["artifact"]["question_id"] == (
+        "synthetic-constant-acceleration-001"
+    )
+    assert "official_answer" not in response["artifact"]
+
+
+def test_cli_rejects_unknown_corpus_question_id(tmp_path, capsys):
+    request_path = tmp_path / "practice-request.json"
+    request_path.write_text(
+        json.dumps({"intent": "practice", "question_id": "unknown-question"}),
+        encoding="utf-8",
+    )
+
+    assert main(["interact", str(request_path)]) == 2
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "not found in the validated corpus" in captured.err

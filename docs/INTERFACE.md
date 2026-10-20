@@ -39,6 +39,34 @@ execution trace.
 
 ### Practice and answer submission
 
+List the available corpus records without revealing answer keys:
+
+```bash
+saemphysics list-questions
+```
+
+Select a question by ID; the CLI loads it from the source-validated corpus:
+
+```json
+{
+  "intent": "practice",
+  "question_id": "synthetic-constant-acceleration-001"
+}
+```
+
+Run the sample with:
+
+```bash
+saemphysics interact examples/requests/student_practice.json
+```
+
+The central processor accepts a question ID only when supplied with a
+validated-corpus resolver. The CLI performs that lookup using
+`data/sources.json` and `data/questions`, so students do not need to resend the
+full record. Unknown IDs and invalid source/rights links fail explicitly.
+
+The existing embedded-record form remains available to trusted callers:
+
 ```json
 {
   "intent": "practice",

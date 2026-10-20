@@ -94,6 +94,40 @@ def main(argv: Sequence[str] | None = None) -> int:
         "student_request",
         help="path to a student-request JSON file, or - to read from stdin",
     )
+    interact_parser.add_argument(
+        "--questions",
+        default="data/questions",
+        help="question directory for ID-based selection (default: data/questions)",
+    )
+    interact_parser.add_argument(
+        "--manifest",
+        default="data/sources.json",
+        help="source manifest for ID-based selection",
+    )
+    interact_parser.add_argument(
+        "--root",
+        default=".",
+        help="project root used to validate selected questions",
+    )
+    list_parser = commands.add_parser(
+        "list-questions",
+        help="list selectable questions without exposing answer keys",
+    )
+    list_parser.add_argument(
+        "--questions",
+        default="data/questions",
+        help="question directory (default: data/questions)",
+    )
+    list_parser.add_argument(
+        "--manifest",
+        default="data/sources.json",
+        help="source manifest (default: data/sources.json)",
+    )
+    list_parser.add_argument(
+        "--root",
+        default=".",
+        help="project root used to validate selected questions",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -159,10 +193,61 @@ def main(argv: Sequence[str] | None = None) -> int:
                 ),
             }
         else:
-            request = StudentRequest.model_validate(
-                _read_json_object(args.student_request)
-            )
-            output = process_student_request(request).model_dump(mode="json")
+            if args.command == "list-questions":
+                manifest = SourceManifest.model_validate(
+                    _read_json_object(args.manifest)
+                )
+                questions = load_question_corpus(
+                    args.questions,
+                    manifest,
+                    args.root,
+                )
+                output = {
+                    "question_count": len(questions),
+                    "questions": [
+                        {
+                            "question_id": question.question_id,
+                            "subject": question.subject,
+                            "topic": question.topic,
+                            "question_text": question.question_text,
+                            "option_count": len(question.options),
+                        }
+                        for question in sorted(
+                            questions, key=lambda question: question.question_id
+                        )
+                    ],
+                }
+            else:
+                request = StudentRequest.model_validate(
+                    _read_json_object(args.student_request)
+                )
+                resolver = None
+                if request.question_id is not None and request.question is None:
+                    manifest = SourceManifest.model_validate(
+                        _read_json_object(args.manifest)
+                    )
+                    questions = load_question_corpus(
+                        args.questions,
+                        manifest,
+                        args.root,
+                    )
+                    question_by_id = {
+                        question.question_id: question for question in questions
+                    }
+
+                    def resolve_question(question_id: str) -> QuestionRecord:
+                        try:
+                            return question_by_id[question_id]
+                        except KeyError as error:
+                            raise ValueError(
+                                f"Question {question_id!r} was not found in the validated corpus"
+                            ) from error
+
+                    resolver = resolve_question
+                output = process_student_request(
+                    request,
+                    question_resolver=resolver,
+                ).model_dump(mode="json")
     except (OSError, ValueError) as error:
         print(f"saemphysics: {error}", file=sys.stderr)
         return 2

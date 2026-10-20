@@ -104,6 +104,54 @@ def test_practice_hides_answer_key_until_submission():
     assert "correct_option" not in response.artifact
 
 
+def test_practice_resolves_question_by_id_without_embedding_record():
+    question = make_question()
+    request = StudentRequest(
+        intent="practice",
+        question_id=question.question_id,
+    )
+
+    response = process_student_request(
+        request,
+        question_resolver=lambda question_id: question,
+    )
+
+    assert response.status == "ready"
+    assert response.artifact["question_id"] == question.question_id
+
+
+def test_id_selection_requires_a_resolver_and_checks_resolved_id():
+    request = StudentRequest(
+        intent="practice",
+        question_id="central-cart-question",
+    )
+
+    with pytest.raises(ValueError, match="requires a validated question-corpus resolver"):
+        process_student_request(request)
+    with pytest.raises(ValueError, match="different question ID"):
+        process_student_request(
+            request,
+            question_resolver=lambda question_id: make_question(
+                verified=False
+            ).model_copy(update={"question_id": "another-question"}),
+        )
+
+
+def test_id_based_answer_submission_checks_resolved_options():
+    question = make_question()
+    request = StudentRequest(
+        intent="submit_answer",
+        question_id=question.question_id,
+        selected_option="D",
+    )
+
+    with pytest.raises(ValueError, match="must match a question option"):
+        process_student_request(
+            request,
+            question_resolver=lambda question_id: question,
+        )
+
+
 def test_submission_grades_against_key_and_reveals_only_verified_work():
     question = make_question(verified=True)
     response = process_student_request(

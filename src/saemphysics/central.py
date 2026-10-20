@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from collections.abc import Callable
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -13,6 +14,7 @@ class StudentRequest(StrictModel):
     """One student-facing request routed to the capabilities available today."""
 
     intent: Literal["solve", "practice", "submit_answer", "explain", "make_lesson"]
+    question_id: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9_-]*$")
     question: QuestionRecord | None = None
     calculation: SemanticIR | None = None
     selected_option: str | None = Field(default=None, pattern=r"^[A-D]$")
@@ -22,24 +24,33 @@ class StudentRequest(StrictModel):
         if self.intent == "solve":
             if self.calculation is None:
                 raise ValueError("solve requires a calculation request")
+            if self.question_id is not None and (
+                self.calculation.question_id != self.question_id
+            ):
+                raise ValueError("calculation and question IDs must match")
             if self.question is not None:
                 if self.calculation.question_id != self.question.question_id:
                     raise ValueError("calculation and question IDs must match")
+            if self.question_id is not None and self.question is not None:
+                if self.question_id != self.question.question_id:
+                    raise ValueError("question_id and question record IDs must match")
             if self.selected_option is not None:
                 raise ValueError("solve cannot include a selected answer option")
             return self
 
         if self.calculation is not None:
             raise ValueError(f"{self.intent} cannot include a calculation request")
-        if self.question is None:
+        if self.question is None and self.question_id is None:
             raise ValueError(f"{self.intent} requires a question record")
+        if self.question is not None and self.question_id is not None:
+            if self.question.question_id != self.question_id:
+                raise ValueError("question_id and question record IDs must match")
 
         if self.intent == "submit_answer":
             if self.selected_option is None:
                 raise ValueError("submit_answer requires a selected option")
-            if not any(
-                option.key == self.selected_option
-                for option in self.question.options
+            if self.question is not None and not any(
+                option.key == self.selected_option for option in self.question.options
             ):
                 raise ValueError("selected_option must match a question option")
         elif self.selected_option is not None:
@@ -76,7 +87,10 @@ def _question_is_verified(question: QuestionRecord) -> bool:
     )
 
 
-def process_student_request(request: StudentRequest) -> StudentResponse:
+def process_student_request(
+    request: StudentRequest,
+    question_resolver: Callable[[str], QuestionRecord] | None = None,
+) -> StudentResponse:
     """Route a student request through verified, explicitly supported workflows."""
     if request.intent == "solve":
         if request.calculation is None:
@@ -95,6 +109,22 @@ def process_student_request(request: StudentRequest) -> StudentResponse:
         )
 
     question = request.question
+    if question is None:
+        if request.question_id is None:
+            raise ValueError(f"{request.intent} request is missing its question ID")
+        if question_resolver is None:
+            raise ValueError(
+                "Selecting by question_id requires a validated question-corpus resolver"
+            )
+        question = question_resolver(request.question_id)
+        if question.question_id != request.question_id:
+            raise ValueError("Question resolver returned a different question ID")
+
+    if request.intent == "submit_answer" and request.selected_option not in {
+        option.key for option in question.options
+    }:
+        raise ValueError("selected_option must match a question option")
+
     if question is None:
         raise ValueError(f"{request.intent} request is missing its question")
 
