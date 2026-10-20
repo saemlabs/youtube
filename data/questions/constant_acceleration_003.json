@@ -1,0 +1,38 @@
+{
+  "question_id": "synthetic-constant-acceleration-003",
+  "exam": "SaemPhysics synthetic pilot",
+  "year": 2026,
+  "subject": "physics",
+  "topic": "mechanics",
+  "subtopic": "constant_acceleration",
+  "language": "en",
+  "source": {
+    "document_id": "saemphysics-original-mechanics-pilot",
+    "question_number": "3",
+    "rights_status": "original"
+  },
+  "question_text": "A vehicle moves at 5 m/s and accelerates at -1 m/s^2 for 3 s. Find the displacement and final velocity.",
+  "diagram_assets": [],
+  "options": [],
+  "official_answer": null,
+  "concepts": ["constant_acceleration", "displacement", "final_velocity"],
+  "solution": {
+    "status": "not_solved",
+    "assumptions": [],
+    "derivation_steps": [],
+    "symbolic_result": null,
+    "numerical_result": null,
+    "units": null,
+    "verification_checks": []
+  },
+  "teaching_plan": {
+    "intuition": null,
+    "visual_analogy": null,
+    "common_misconception": null,
+    "exam_strategy": null
+  },
+  "review": {
+    "human_verified": false,
+    "reviewer": null
+  }
+}

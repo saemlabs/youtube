@@ -35,9 +35,9 @@ strict, provenance-aware format for a question before collecting a real corpus.
 3. Define one student-facing request/response contract over supported
    capabilities. **Started:** see [`INTERFACE.md`](./INTERFACE.md) and
    `saemphysics interact`.
-4. Validate canonical question JSON and add a clearly synthetic first record.
-   Use `saemphysics validate-question`; this month is not complete until its
-   tests and example pass.
+4. Validate canonical question JSON and add clearly synthetic starter records.
+   Five original constant-acceleration examples now pass the corpus and solver
+   checks; they remain unsolved/unreviewed in the question bank.
 5. Keep source rights and human review explicit. **Exit check:** a malformed
    record is rejected, and the starter example is unmistakably synthetic and
    remains unsolved/unreviewed.
@@ -59,8 +59,15 @@ subtopic (target: 10–20 records, not a mass PDF import).
 
 The uploaded reference documents have a catalog at
 [`data/sources.json`](../data/sources.json), validated by
-`saemphysics validate-sources`. This catalogs the supplied PDFs/DOCX only;
-selecting and licensing an exam paper remains a separate Month 2 decision.
+`saemphysics validate-sources`. It catalogs the supplied references plus the
+synthetic source; selecting and licensing an exam paper remains a separate
+Month 2 decision.
+
+The project also has five original synthetic constant-acceleration prompts
+for exercising the question schema and solver. They are not exam-corpus
+records and do not replace the rights-cleared, manually reviewed pilot.
+Their source links and rights labels are checked with
+`saemphysics validate-corpus data/questions`.
 
 ## Month 3 — Reproducible document and question ingestion
 

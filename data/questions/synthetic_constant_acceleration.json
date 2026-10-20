@@ -7,7 +7,8 @@
   "subtopic": "constant_acceleration",
   "language": "en",
   "source": {
-    "document_id": "saemphysics-synthetic-demo",
+    "document_id": "saemphysics-original-mechanics-pilot",
+    "question_number": "1",
     "rights_status": "original"
   },
   "question_text": "A cart moves at 3 m/s and accelerates at 2 m/s^2 for 4 s. Find its displacement and final velocity.",

@@ -14,6 +14,8 @@ Run a structured request through the verified Python backend:
 ```bash
 python -m pip install -e .
 saemphysics run examples/requests/constant_acceleration.json
+saemphysics validate-sources data/sources.json
+saemphysics validate-corpus data/questions
 ```
 
 Use `-` as the request path to read JSON from standard input. Results are written

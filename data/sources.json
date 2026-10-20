@@ -174,6 +174,15 @@
       "title": "SaemPhysics_Future_Roadmap_Knowledge_to_Lecture_Engine-1.pdf",
       "category": "vision",
       "path": "docs/vision/SaemPhysics_Future_Roadmap_Knowledge_to_Lecture_Engine-1.pdf"
+    },
+    {
+      "document_id": "saemphysics-original-mechanics-pilot",
+      "title": "Original synthetic mechanics pilot",
+      "category": "physics",
+      "path": "data/sources/synthetic_mechanics_pilot.md",
+      "rights_status": "original",
+      "rights_evidence": "Original synthetic prompts authored for SaemPhysics; not copied from an external exam or reference.",
+      "ingestion_status": "catalogued"
     }
   ]
 }

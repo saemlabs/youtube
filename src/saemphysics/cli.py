@@ -9,7 +9,11 @@ from saemphysics.central import StudentRequest, process_student_request
 from saemphysics.ir import SemanticIR, compile_request
 from saemphysics.models import QuestionRecord
 from saemphysics.runtime import execute_plan
-from saemphysics.sources import SourceManifest, validate_source_files
+from saemphysics.sources import (
+    SourceManifest,
+    load_question_corpus,
+    validate_source_files,
+)
 
 
 def _read_json_object(path: str) -> dict[str, object]:
@@ -64,6 +68,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=".",
         help="project root used to resolve manifest paths (default: current directory)",
     )
+    corpus_parser = commands.add_parser(
+        "validate-corpus",
+        help="validate question records against their source manifest",
+    )
+    corpus_parser.add_argument(
+        "questions",
+        help="directory containing canonical question JSON files",
+    )
+    corpus_parser.add_argument(
+        "--manifest",
+        default="data/sources.json",
+        help="source manifest JSON path (default: data/sources.json)",
+    )
+    corpus_parser.add_argument(
+        "--root",
+        default=".",
+        help="project root used to resolve paths (default: current directory)",
+    )
     interact_parser = commands.add_parser(
         "interact",
         help="route a student request through the central processing interface",
@@ -112,6 +134,29 @@ def main(argv: Sequence[str] | None = None) -> int:
                         "human_reviewed",
                     )
                 },
+            }
+        elif args.command == "validate-corpus":
+            manifest = SourceManifest.model_validate(
+                _read_json_object(args.manifest)
+            )
+            questions = load_question_corpus(
+                args.questions,
+                manifest,
+                args.root,
+            )
+            output = {
+                "valid": True,
+                "question_count": len(questions),
+                "question_ids": sorted(
+                    question.question_id for question in questions
+                ),
+                "source_document_ids": sorted(
+                    {question.source.document_id for question in questions}
+                ),
+                "all_unsolved": all(
+                    question.solution.status.value == "not_solved"
+                    for question in questions
+                ),
             }
         else:
             request = StudentRequest.model_validate(

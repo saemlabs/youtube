@@ -14,9 +14,21 @@ Validate every catalog entry and its local file with:
 saemphysics validate-sources data/sources.json
 ```
 
-All uploaded sources currently remain `review_required` for rights and
-`catalogued` for ingestion. The catalog does not assert that a document is
-licensed for redistribution or that any question has been extracted.
+The 29 uploaded reference documents remain `review_required` for rights and
+`catalogued` for ingestion. A separate SaemPhysics-authored synthetic sample
+is marked `original`; that does not assert that any external upload is
+licensed for redistribution. The catalog does not claim that exam questions
+have been extracted.
+
+The five original synthetic mechanics prompts are catalogued separately in
+[`data/sources/synthetic_mechanics_pilot.md`](../data/sources/synthetic_mechanics_pilot.md)
+and stored as canonical records in [`data/questions/`](../data/questions).
+They are test/learning examples, not questions extracted from the uploaded
+textbooks or from a real examination. Validate their provenance links with:
+
+```bash
+saemphysics validate-corpus data/questions
+```
 
 ## Vision and project design
 

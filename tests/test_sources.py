@@ -5,10 +5,13 @@ import pytest
 from pydantic import ValidationError
 
 from saemphysics.cli import main
+from saemphysics.ir import SemanticIR, compile_request
 from saemphysics.models import RightsStatus
+from saemphysics.runtime import execute_plan
 from saemphysics.sources import (
     SourceDocument,
     SourceManifest,
+    load_question_corpus,
     validate_source_files,
 )
 
@@ -31,11 +34,16 @@ def test_manifest_catalogs_every_uploaded_pdf_and_docx():
         Path("data/sources.json").read_text(encoding="utf-8")
     )
 
-    assert len(manifest.documents) == 29
+    assert len(manifest.documents) == 30
     assert all(
         document.rights_status == RightsStatus.REVIEW_REQUIRED
         for document in manifest.documents
+        if document.document_id != "saemphysics-original-mechanics-pilot"
     )
+    assert sum(
+        document.rights_status == RightsStatus.REVIEW_REQUIRED
+        for document in manifest.documents
+    ) == 29
     assert all(document.ingestion_status == "catalogued" for document in manifest.documents)
 
 
@@ -104,12 +112,118 @@ def test_cli_validates_the_uploaded_source_catalog(capsys):
     assert captured.err == ""
     assert json.loads(captured.out) == {
         "valid": True,
-        "document_count": 29,
+        "document_count": 30,
         "rights_review_required": 29,
         "ingestion_status_counts": {
-            "catalogued": 29,
+            "catalogued": 30,
             "extraction_pending": 0,
             "extracted": 0,
             "human_reviewed": 0,
         },
+    }
+
+
+def test_pilot_corpus_records_match_catalogued_original_source():
+    manifest = SourceManifest.model_validate_json(
+        Path("data/sources.json").read_text(encoding="utf-8")
+    )
+    questions = load_question_corpus("data/questions", manifest)
+
+    assert len(questions) == 5
+    assert len({question.question_id for question in questions}) == 5
+    assert all(
+        question.source.document_id == "saemphysics-original-mechanics-pilot"
+        and question.source.rights_status == RightsStatus.ORIGINAL
+        and question.solution.status.value == "not_solved"
+        and not question.review.human_verified
+        for question in questions
+    )
+
+
+def test_each_synthetic_pilot_prompt_has_a_passing_exact_solver_case():
+    manifest = SourceManifest.model_validate_json(
+        Path("data/sources.json").read_text(encoding="utf-8")
+    )
+    questions = load_question_corpus("data/questions", manifest)
+    cases = {
+        "synthetic-constant-acceleration-001": ("3", "2", "4", "28", "11"),
+        "synthetic-constant-acceleration-002": ("4", "3/2", "2", "11", "7"),
+        "synthetic-constant-acceleration-003": ("5", "-1", "3", "21/2", "2"),
+        "synthetic-constant-acceleration-004": ("-2", "2", "2", "0", "2"),
+        "synthetic-constant-acceleration-005": ("3", "0", "5", "15", "3"),
+    }
+
+    for question in questions:
+        initial_velocity, acceleration, time, displacement, final_velocity = cases[
+            question.question_id
+        ]
+        result = execute_plan(
+            compile_request(
+                SemanticIR(
+                    operation="solve_constant_acceleration",
+                    question_id=question.question_id,
+                    initial_velocity_m_s=initial_velocity,
+                    acceleration_m_s2=acceleration,
+                    time_s=time,
+                )
+            )
+        )
+        assert result.result.displacement_m == displacement
+        assert result.result.final_velocity_m_s == final_velocity
+        assert result.verification.status == "passed"
+
+
+def test_corpus_rejects_unknown_source_and_mismatched_rights(tmp_path):
+    question_dir = tmp_path / "questions"
+    question_dir.mkdir()
+    manifest = SourceManifest(
+        documents=[
+            make_document(
+                path="docs/reference.pdf",
+            )
+        ]
+    )
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs/reference.pdf").write_text("source", encoding="utf-8")
+    question = {
+        "question_id": "pilot-question",
+        "exam": "Synthetic pilot",
+        "year": 2026,
+        "subject": "physics",
+        "topic": "mechanics",
+        "source": {
+            "document_id": "unknown-document",
+            "rights_status": "review_required",
+        },
+        "question_text": "A synthetic test question.",
+    }
+    (question_dir / "question.json").write_text(json.dumps(question), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unknown source"):
+        load_question_corpus(question_dir, manifest, tmp_path)
+
+    question["source"]["document_id"] = "reference-book"
+    question["source"]["rights_status"] = "original"
+    (question_dir / "question.json").write_text(json.dumps(question), encoding="utf-8")
+    with pytest.raises(ValueError, match="rights status does not match"):
+        load_question_corpus(question_dir, manifest, tmp_path)
+
+
+def test_cli_validates_the_complete_synthetic_pilot(capsys):
+    assert main(["validate-corpus", "data/questions"]) == 0
+
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    assert json.loads(captured.out) == {
+        "valid": True,
+        "question_count": 5,
+        "question_ids": [
+            "synthetic-constant-acceleration-001",
+            "synthetic-constant-acceleration-002",
+            "synthetic-constant-acceleration-003",
+            "synthetic-constant-acceleration-004",
+            "synthetic-constant-acceleration-005",
+        ],
+        "source_document_ids": ["saemphysics-original-mechanics-pilot"],
+        "all_unsolved": True,
     }

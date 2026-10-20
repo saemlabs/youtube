@@ -1,9 +1,10 @@
+import json
 from pathlib import Path, PurePosixPath
 from typing import Literal
 
 from pydantic import Field, HttpUrl, model_validator
 
-from saemphysics.models import RightsStatus, StrictModel
+from saemphysics.models import QuestionRecord, RightsStatus, StrictModel
 
 
 class PageMapping(StrictModel):
@@ -90,3 +91,65 @@ def validate_source_files(
                 f"Source file for {document.document_id!r} does not exist: "
                 f"{document.path}"
             )
+
+
+def load_question_corpus(
+    question_directory: str | Path,
+    manifest: SourceManifest,
+    project_root: str | Path = ".",
+) -> list[QuestionRecord]:
+    """Load canonical questions and verify their source and rights references."""
+    root = Path(project_root).resolve()
+    directory = Path(question_directory)
+    if not directory.is_absolute():
+        directory = root / directory
+    directory = directory.resolve()
+    if not directory.is_relative_to(root):
+        raise ValueError("Question directory must be inside the project root")
+    if not directory.is_dir():
+        raise ValueError(f"Question directory does not exist: {question_directory}")
+
+    validate_source_files(manifest, root)
+    documents = {document.document_id: document for document in manifest.documents}
+    records: list[QuestionRecord] = []
+    seen_ids: set[str] = set()
+    for path in sorted(directory.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            raise ValueError(f"Invalid JSON in question file {path.name}: {error}") from error
+        if not isinstance(payload, dict):
+            raise ValueError(f"Question file {path.name} must contain a JSON object")
+        question = QuestionRecord.model_validate(payload)
+        if question.question_id in seen_ids:
+            raise ValueError(
+                f"Duplicate question ID in corpus: {question.question_id!r}"
+            )
+        seen_ids.add(question.question_id)
+
+        source = documents.get(question.source.document_id)
+        if source is None:
+            raise ValueError(
+                f"Question {question.question_id!r} references unknown source "
+                f"{question.source.document_id!r}"
+            )
+        if question.source.rights_status != source.rights_status:
+            raise ValueError(
+                f"Question {question.question_id!r} rights status does not match "
+                f"source {source.document_id!r}"
+            )
+        if (
+            question.source.page is not None
+            and source.page_mapping
+            and question.source.page
+            not in {entry.page for entry in source.page_mapping}
+        ):
+            raise ValueError(
+                f"Question {question.question_id!r} references page "
+                f"{question.source.page} missing from source page mapping"
+            )
+        records.append(question)
+
+    if not records:
+        raise ValueError(f"No question JSON files found in {directory}")
+    return records
