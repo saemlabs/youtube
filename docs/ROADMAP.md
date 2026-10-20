@@ -6,6 +6,12 @@ Each phase should leave a tested, reviewable artifact. Keep the current focus
 small, record a short checkpoint at the end of each work session, and carry
 unfinished work forward rather than starting parallel systems.
 
+The relationship and shared build order for the three owner visions—quantum
+cognitive operating system, Saem EdTech platform, and daily teacher content—
+are described in [`THREE_VISION_BUILD.md`](./THREE_VISION_BUILD.md). Build the
+teacher lesson slice first, reuse it in EdTech, and grow the cognitive/quantum
+research foundation through the same tested contract.
+
 ## Working rules
 
 - Work on one vertical slice at a time; prefer one topic and a small verified
@@ -51,6 +57,10 @@ strict, provenance-aware format for a question before collecting a real corpus.
    and routes practice and grading through that same processor. The
    language-neutral contract remains the integration boundary; C/C++ and
    C#/.NET engine modules are future capabilities, not separate processors.
+   The `/teacher` studio now turns an original constant-acceleration example
+   into a verified, renderer-independent lesson draft with visible checks,
+   trace, and review/rights blockers. It is stateless and does not render or
+   publish video.
 5. Validate canonical question JSON and add clearly synthetic starter records.
    Five original constant-acceleration examples now pass the corpus and solver
    checks; they remain unsolved/unreviewed in the question bank.

@@ -20,7 +20,10 @@ h2 { margin: 0 0 16px; font-size: 19px; }
 .welcome > p:last-child, .muted { max-width: 610px; margin: 0; color: #b4bfcd; line-height: 1.65; }
 .card { margin-top: 16px; padding: 22px; border: 1px solid #2a3340; border-radius: 12px; background: #191f29; }
 label:not(.choice) { display: block; margin: 12px 0 7px; color: #c8d1dd; font-size: 13px; }
-select { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid #374251; border-radius: 7px; background: #131922; color: #edf1f7; font: inherit; }
+select, input:not([type="radio"]), textarea { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid #374251; border-radius: 7px; background: #131922; color: #edf1f7; font: inherit; }
+textarea { resize: vertical; line-height: 1.5; }
+input:focus, select:focus, textarea:focus { outline: 2px solid #67c8aa; outline-offset: 1px; }
+.input-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .button { min-height: 42px; margin-top: 14px; padding: 0 16px; border: 0; border-radius: 7px; background: #87e0c2; color: #10231e; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .button:hover { background: #a3efd7; }
 .question-text { color: #dce3ed; font-size: 15px; line-height: 1.7; }
@@ -30,10 +33,19 @@ select { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid #37
 .feedback.incorrect, .feedback.error { color: #ff9f9f; }
 .feedback.correct { color: #a5ecd5; }
 .answer-reveal { color: #dce3ed; }
+.checks .passed { color: #a5ecd5; }
+.checks .failed { color: #ff9f9f; }
+.scene-list { display: grid; gap: 12px; margin-top: 20px; }
+.scene-card { padding: 16px; border: 1px solid #2a3340; border-radius: 9px; background: #151b24; }
+.scene-card h3 { margin-bottom: 12px; text-transform: capitalize; }
+.scene-card p { margin-bottom: 8px; color: #c8d1dd; font-size: 13px; line-height: 1.6; }
+.scene-card li, .trace li, .checks li, .card > ul li { margin: 6px 0; color: #b4bfcd; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.trace { max-height: 260px; overflow: auto; }
 footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; color: #9ba7b7; font-size: 11px; }
 footer span { white-space: nowrap; }
 @media (max-width: 560px) {
   .topbar, footer { align-items: flex-start; flex-direction: column; }
   .brand span { display: block; margin: 4px 0 0; }
   .card, .welcome { padding: 18px; }
+  .input-grid { grid-template-columns: 1fr; gap: 0; }
 }

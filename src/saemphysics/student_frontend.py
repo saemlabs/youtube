@@ -125,7 +125,8 @@ def render_student_page(
       {question_panel}
       <footer>
         Python-rendered interface · shared SaemPhysics request processor · local prototype
-        <span><a href="/">Open the full workbench</a></span>
+        <span><a href="/teacher">Teacher lesson studio</a> ·
+          <a href="/">Open the full workbench</a></span>
       </footer>
     </main>
   </body>

@@ -8,6 +8,8 @@
 - `web/`: local browser workbench and styles for the Python-rendered student page.
 - `docs/`: uploaded reference material grouped by topic; see the [document index](./docs/README.md).
 - [Phased build roadmap](./docs/ROADMAP.md): monthly milestones and the current first task.
+- [Three-vision build path](./docs/THREE_VISION_BUILD.md): how teacher content,
+  the EdTech platform, and the cognitive/quantum direction share one engine.
 - [Project principles](./docs/PROJECT_PRINCIPLES.md): unified-engine direction,
   cloud intent, and educational/religious source stewardship.
 - `prototypes/`: standalone browser prototypes that are not yet connected to the Python pipeline.
@@ -56,6 +58,11 @@ student/teacher page. It links to the SaemPhysics YouTube channel and routes
 practice and answer submission through the same central processor. The
 planned C/C++/C#/.NET language boundaries are documented in the
 [unified engine direction](./docs/ENGINE_ARCHITECTURE.md).
+
+Open `/teacher` for the local teacher lesson studio. It verifies an original
+constant-acceleration example and renders an unsaved lesson draft with solver
+checks, execution trace, and human-review/rights blockers. It does not create
+or publish a video.
 
 ## Working foundation
 

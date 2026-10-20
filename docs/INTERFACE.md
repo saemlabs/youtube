@@ -21,6 +21,14 @@ student/teacher page. It links to the SaemPhysics YouTube profile and uses
 `process_student_request` for both question practice and answer grading; it
 does not contain a separate solver or grading implementation.
 
+Open `/teacher` for a focused local lesson studio. It accepts an original
+constant-acceleration example, runs the exact calculation, attaches passing
+verification evidence, and routes the resulting record through the existing
+`make_lesson` intent. The returned scene outline, execution trace, and
+publication blockers are rendered for teacher review. This flow is stateless,
+does not save a draft, and does not render or publish a video; the prompt and
+source remain review-required until reviewed.
+
 It serves the UI and JSON endpoints from one origin, reads questions from the
 source-validated corpus, and renders result/check/trace data. The visualization
 is a browser-side plot of the solver's exact constant-acceleration inputs; the
@@ -185,6 +193,9 @@ The local HTTP adapter exposes:
 - `GET /api/health`: readiness and corpus size.
 - `GET /api/questions`: question metadata/options without answer keys.
 - `POST /api/interact`: a validated student request and response envelope.
+- `GET /student` and `POST /student`: focused corpus practice and answer
+  submission.
+- `GET /teacher` and `POST /teacher`: local verified-example lesson drafting.
 
 Request bodies are limited to 1 MiB. Unknown paths, malformed input, unsupported
 content types, and invalid corpus IDs return explicit errors.

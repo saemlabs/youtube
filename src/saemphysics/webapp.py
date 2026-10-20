@@ -11,6 +11,11 @@ from saemphysics.central import StudentRequest, process_student_request
 from saemphysics.models import QuestionRecord
 from saemphysics.sources import SourceManifest, load_question_corpus
 from saemphysics.student_frontend import render_student_page
+from saemphysics.teacher_frontend import render_teacher_page
+from saemphysics.teacher_workflow import (
+    TeacherLessonInput,
+    create_teacher_lesson_draft,
+)
 
 
 _MAX_REQUEST_BYTES = 1_048_576
@@ -102,6 +107,9 @@ def create_server(
             if self.path == "/student":
                 self._send_html(200, render_student_page(questions))
                 return
+            if self.path == "/teacher":
+                self._send_html(200, render_teacher_page())
+                return
             if self.path == "/api/health":
                 self._send_json(200, {"status": "ok", "question_count": len(questions)})
                 return
@@ -149,6 +157,9 @@ def create_server(
             self.wfile.write(body)
 
         def do_POST(self) -> None:
+            if self.path == "/teacher":
+                self._handle_teacher_form()
+                return
             if self.path == "/student":
                 self._handle_student_form()
                 return
@@ -191,6 +202,83 @@ def create_server(
                 self._send_json(400, {"error": str(error)})
                 return
             self._send_json(200, response.model_dump(mode="json"))
+
+        def _handle_teacher_form(self) -> None:
+            if self.headers.get_content_type() != "application/x-www-form-urlencoded":
+                self._send_html(
+                    415,
+                    render_teacher_page(
+                        error="Form submissions must be URL encoded."
+                    ),
+                )
+                return
+            try:
+                content_length = int(self.headers.get("Content-Length", ""))
+            except ValueError:
+                self._send_html(
+                    411,
+                    render_teacher_page(error="A valid Content-Length is required."),
+                )
+                return
+            if content_length < 0:
+                self._send_html(
+                    400,
+                    render_teacher_page(error="Content-Length cannot be negative."),
+                )
+                return
+            if content_length > _MAX_REQUEST_BYTES:
+                self._send_html(
+                    413,
+                    render_teacher_page(error="The form exceeds the 1 MiB request limit."),
+                )
+                return
+
+            try:
+                form = parse_qs(
+                    self.rfile.read(content_length).decode("utf-8"),
+                    keep_blank_values=True,
+                    strict_parsing=True,
+                )
+                expected_fields = {
+                    "action",
+                    "question_text",
+                    "initial_velocity_m_s",
+                    "acceleration_m_s2",
+                    "time_s",
+                    "intuition",
+                    "common_misconception",
+                }
+                if set(form) != expected_fields:
+                    raise ValueError("The form contains missing or unsupported fields.")
+
+                def field(name: str) -> str:
+                    values = form[name]
+                    if len(values) != 1:
+                        raise ValueError(f"Form field {name!r} must be submitted once.")
+                    return values[0]
+
+                if field("action") != "create_lesson":
+                    raise ValueError("Unsupported teacher form action.")
+                request = TeacherLessonInput(
+                    question_text=field("question_text"),
+                    initial_velocity_m_s=field("initial_velocity_m_s"),
+                    acceleration_m_s2=field("acceleration_m_s2"),
+                    time_s=field("time_s"),
+                    intuition=field("intuition") or None,
+                    common_misconception=field("common_misconception") or None,
+                )
+                response = create_teacher_lesson_draft(request)
+            except (
+                UnicodeDecodeError,
+                ValidationError,
+                ValueError,
+            ) as error:
+                self._send_html(
+                    400,
+                    render_teacher_page(error=str(error)),
+                )
+                return
+            self._send_html(200, render_teacher_page(response=response))
 
         def _handle_student_form(self) -> None:
             if self.headers.get_content_type() != "application/x-www-form-urlencoded":

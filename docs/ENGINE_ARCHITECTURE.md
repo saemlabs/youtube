@@ -66,6 +66,11 @@ the same typed boundaries and review gates. Quantum execution, adaptive AI
 teaching, durable learner accounts, and public publishing are future work and
 are not implied by this prototype.
 
+The connected outcomes and ordered implementation path are described in
+[`THREE_VISION_BUILD.md`](./THREE_VISION_BUILD.md): teacher-created lessons,
+the learner platform reusing those reviewed artifacts, and the cognitive/quantum
+research direction all build on the same engine rather than separate models.
+
 Cloud direction, educational-source rights, and the owner's intended ethical
 source-review principles are recorded in
 [`PROJECT_PRINCIPLES.md`](./PROJECT_PRINCIPLES.md). Those principles describe

@@ -42,9 +42,9 @@ def post_json(base_url, payload):
         return error.code, json.loads(error.read())
 
 
-def post_form(base_url, fields):
+def post_form(base_url, fields, path="/student"):
     request = Request(
-        f"{base_url}/student",
+        f"{base_url}{path}",
         data=urlencode(fields).encode("utf-8"),
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         method="POST",
@@ -117,10 +117,97 @@ def test_python_student_frontend_rejects_unknown_corpus_ids(workbench_server):
     assert "not found in the validated corpus" in page
 
 
+def test_teacher_studio_builds_reviewable_lesson_with_exact_checks(workbench_server):
+    with urlopen(f"{workbench_server}/teacher", timeout=3) as response:
+        page = response.read().decode("utf-8")
+    assert response.status == 200
+    assert "Teacher lesson studio" in page
+    assert 'name="question_text"' in page
+    assert 'name="initial_velocity_m_s"' in page
+    assert 'name="common_misconception"' in page
+
+    status, page = post_form(
+        workbench_server,
+        {
+            "action": "create_lesson",
+            "question_text": (
+                "A cart moves at 3 m/s and accelerates at 2 m/s^2 for 4 s. "
+                "Find displacement and final velocity."
+            ),
+            "initial_velocity_m_s": "3",
+            "acceleration_m_s2": "2",
+            "time_s": "4",
+            "intuition": "Velocity changes steadily during each second.",
+            "common_misconception": "Confusing final velocity with displacement.",
+        },
+        path="/teacher",
+    )
+
+    assert status == 200
+    assert "Lesson draft" in page
+    assert "Displacement: s = ut + 1/2 at^2" in page
+    assert "28 m" in page
+    assert "11 m/s" in page
+    assert "Execution trace" in page
+    assert "semantic_ir" in page
+    assert "Publication blockers" in page
+    assert "A human reviewer has not approved the question." in page
+    assert "Source rights are not cleared for publication." in page
+    assert "not a finished or approved video" in page
+
+
+def test_teacher_studio_rejects_invalid_math_and_escapes_teacher_text(
+    workbench_server,
+):
+    fields = {
+        "action": "create_lesson",
+        "question_text": '<script>alert("lesson")</script> A cart accelerates.',
+        "initial_velocity_m_s": "not-a-number",
+        "acceleration_m_s2": "2",
+        "time_s": "4",
+        "intuition": "",
+        "common_misconception": "",
+    }
+    status, page = post_form(workbench_server, fields, path="/teacher")
+
+
+    assert status == 400
+    assert "Semantic IR inputs must be exact rational numbers" in page
+    assert "<script>alert" not in page
+
+    fields["initial_velocity_m_s"] = "3"
+    status, page = post_form(workbench_server, fields, path="/teacher")
+
+    assert status == 200
+    assert "&lt;script&gt;" in page
+    assert "<script>alert" not in page
+
+
+def test_teacher_studio_rejects_unknown_fields(workbench_server):
+    status, page = post_form(
+        workbench_server,
+        {
+            "action": "create_lesson",
+            "question_text": "A cart accelerates for four seconds.",
+            "initial_velocity_m_s": "3",
+            "acceleration_m_s2": "2",
+            "time_s": "4",
+            "intuition": "",
+            "common_misconception": "",
+            "publish_now": "true",
+        },
+        path="/teacher",
+    )
+
+    assert status == 400
+    assert "missing or unsupported fields" in page
+
+
 def test_frontend_assets_are_served_from_fixed_routes(workbench_server):
     for path, expected_type in (
         ("/assets/app.css", "text/css"),
         ("/assets/app.js", "text/javascript"),
+        ("/assets/student.css", "text/css"),
     ):
         with urlopen(f"{workbench_server}{path}", timeout=3) as response:
             asset = response.read()
