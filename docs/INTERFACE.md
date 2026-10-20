@@ -9,21 +9,26 @@ saemphysics interact examples/requests/student_solve.json
 saemphysics interact -
 ```
 
-The C++ constant-acceleration capability is optional and must be selected
-explicitly after building it:
+The native constant-acceleration capability is optional and must be selected
+explicitly after building a C, C++, or C# implementation:
 
 ```bash
+cc -std=c11 -O2 -Wall -Wextra -Werror \
+  native/c/constant_acceleration.c -o /tmp/saemphysics-kinematics-c
 c++ -std=c++17 -O2 -Wall -Wextra -Werror \
   native/cpp/constant_acceleration.cpp -o /tmp/saemphysics-kinematics
+dotnet build native/csharp/SaemPhysics.Kinematics.csproj --configuration Release
 saemphysics interact examples/requests/student_solve.json \
-  --native-kinematics /tmp/saemphysics-kinematics
+  --native-kinematics /tmp/saemphysics-kinematics-c
 ```
 
-For the local web workbench, pass the same executable at server startup:
+For the C# build, the executable is at
+`native/csharp/bin/Release/net10.0/SaemPhysics.Kinematics`. Pass any one of the
+three executables to `--native-kinematics`, including at local web startup:
 `saemphysics web --native-kinematics /path/to/saemphysics-kinematics`.
-The native result is cross-checked exactly against Python before use; failures
-are surfaced explicitly and never trigger silent fallback. The option supports
-only constant-acceleration solve requests. Python remains the default.
+Every native result is cross-checked exactly against Python before use;
+failures are surfaced explicitly and never trigger silent fallback. The option
+supports only constant-acceleration solve requests. Python remains the default.
 
 The interactive browser workbench uses the same central router through a
 local-only HTTP adapter:
@@ -233,8 +238,8 @@ and tests exist. The roadmap stages ingestion, concept mapping, lesson review,
 rendering, and learner-facing persistence separately; a future web/API layer
 can call this same central function instead of duplicating business rules.
 
-The planned C/C++/C#/.NET engine boundaries and current implementation status
-are documented in [`ENGINE_ARCHITECTURE.md`](./ENGINE_ARCHITECTURE.md).
+The native C/C++/C# capability and remaining engine boundaries are documented
+in [`ENGINE_ARCHITECTURE.md`](./ENGINE_ARCHITECTURE.md).
 
 ## Design references
 

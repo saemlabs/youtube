@@ -1,3 +1,5 @@
+"""Shared conformance tests for native language backends."""
+
 import json
 from pathlib import Path
 import shutil
@@ -44,6 +46,58 @@ def native_solver(tmp_path_factory):
         capture_output=True,
         text=True,
     )
+    return executable
+
+
+@pytest.fixture(scope="module")
+def native_c_solver(tmp_path_factory):
+    compiler = shutil.which("cc")
+    if compiler is None:
+        pytest.skip("A C11 compiler is required for native C conformance tests")
+    executable = tmp_path_factory.mktemp("native-c") / "saemphysics-kinematics-c"
+    subprocess.run(
+        [
+            compiler,
+            "-std=c11",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            str(ROOT / "native/c/constant_acceleration.c"),
+            "-o",
+            str(executable),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return executable
+
+
+@pytest.fixture(scope="module")
+def native_csharp_solver(tmp_path_factory):
+    dotnet = shutil.which("dotnet")
+    if dotnet is None:
+        pytest.skip(".NET 10 SDK is required for native C# conformance tests")
+    output = tmp_path_factory.mktemp("native-csharp")
+    subprocess.run(
+        [
+            dotnet,
+            "build",
+            str(ROOT / "native/csharp/SaemPhysics.Kinematics.csproj"),
+            "--configuration",
+            "Release",
+            "--nologo",
+            "--output",
+            str(output),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    executable = output / "SaemPhysics.Kinematics"
+    if not executable.is_file():
+        pytest.fail("The .NET build did not produce the C# native executable")
     return executable
 
 
@@ -95,17 +149,18 @@ def _post_motion_request(base_url):
         return error.code, json.loads(error.read())
 
 
-def test_cpp_constant_acceleration_matches_all_shared_vectors(native_solver):
-    vectors = _contract_vectors()["valid_vectors"]
-    motion_vectors = [
+def _motion_vectors():
+    return [
         vector
-        for vector in vectors
+        for vector in _contract_vectors()["valid_vectors"]
         if vector["request"]["calculation"]["operation"]
         == "solve_constant_acceleration"
     ]
-    assert len(motion_vectors) == 2
 
-    for vector in motion_vectors:
+
+def test_cpp_constant_acceleration_matches_all_shared_vectors(native_solver):
+    assert len(_motion_vectors()) >= 4
+    for vector in _motion_vectors():
         calculation = vector["request"]["calculation"]
         result = subprocess.run(
             [
@@ -122,15 +177,7 @@ def test_cpp_constant_acceleration_matches_all_shared_vectors(native_solver):
 
 
 def test_cpp_native_capability_routes_through_central_processor(native_solver):
-    vectors = _contract_vectors()["valid_vectors"]
-    motion_vectors = [
-        vector
-        for vector in vectors
-        if vector["request"]["calculation"]["operation"]
-        == "solve_constant_acceleration"
-    ]
-
-    for vector in motion_vectors:
+    for vector in _motion_vectors():
         response = process_student_request(
             StudentRequest.model_validate(vector["request"]),
             native_kinematics_executable=str(native_solver),
@@ -140,8 +187,74 @@ def test_cpp_native_capability_routes_through_central_processor(native_solver):
         assert payload["status"] == vector["expected"]["status"]
         assert payload["artifact"] == vector["expected"]["artifact"]
         assert payload["verification"]["status"] == "passed"
-        assert payload["trace"][-2]["event"] == "cpp_native_cross_checked"
+        assert payload["trace"][-2]["event"] == "native_kinematics_cross_checked"
         assert "cross-checked" in payload["trace"][-2]["details"]
+
+
+def test_c_constant_acceleration_matches_all_shared_vectors(native_c_solver):
+    for vector in _motion_vectors():
+        calculation = vector["request"]["calculation"]
+        result = subprocess.run(
+            [
+                str(native_c_solver),
+                calculation["initial_velocity_m_s"],
+                calculation["acceleration_m_s2"],
+                calculation["time_s"],
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        assert json.loads(result.stdout) == vector["expected"]["artifact"]["result"]
+
+
+def test_c_native_capability_routes_through_central_processor(native_c_solver):
+    for vector in _motion_vectors():
+        response = process_student_request(
+            StudentRequest.model_validate(vector["request"]),
+            native_kinematics_executable=str(native_c_solver),
+        )
+        payload = response.model_dump(mode="json")
+
+        assert payload["status"] == vector["expected"]["status"]
+        assert payload["artifact"] == vector["expected"]["artifact"]
+        assert payload["verification"]["status"] == "passed"
+        assert payload["trace"][-2]["event"] == "native_kinematics_cross_checked"
+
+
+def test_csharp_constant_acceleration_matches_all_shared_vectors(
+    native_csharp_solver,
+):
+    for vector in _motion_vectors():
+        calculation = vector["request"]["calculation"]
+        result = subprocess.run(
+            [
+                str(native_csharp_solver),
+                calculation["initial_velocity_m_s"],
+                calculation["acceleration_m_s2"],
+                calculation["time_s"],
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        assert json.loads(result.stdout) == vector["expected"]["artifact"]["result"]
+
+
+def test_csharp_native_capability_routes_through_central_processor(
+    native_csharp_solver,
+):
+    for vector in _motion_vectors():
+        response = process_student_request(
+            StudentRequest.model_validate(vector["request"]),
+            native_kinematics_executable=str(native_csharp_solver),
+        )
+        payload = response.model_dump(mode="json")
+
+        assert payload["status"] == vector["expected"]["status"]
+        assert payload["artifact"] == vector["expected"]["artifact"]
+        assert payload["verification"]["status"] == "passed"
+        assert payload["trace"][-2]["event"] == "native_kinematics_cross_checked"
 
 
 def test_cpp_native_capability_fails_closed_on_result_mismatch(tmp_path):
@@ -175,9 +288,16 @@ def test_cpp_native_capability_fails_closed_on_result_mismatch(tmp_path):
         )
 
 
-def test_cpp_native_capability_is_available_through_cli(
-    native_solver, tmp_path, capsys
+@pytest.mark.parametrize("backend", ["cpp", "c", "csharp"])
+def test_native_capability_is_available_through_cli(
+    backend, request, tmp_path, capsys
 ):
+    solver_fixture = {
+        "cpp": "native_solver",
+        "c": "native_c_solver",
+        "csharp": "native_csharp_solver",
+    }[backend]
+    native_solver = request.getfixturevalue(solver_fixture)
     request_path = tmp_path / "motion-request.json"
     request_path.write_text(
         json.dumps(
@@ -209,12 +329,19 @@ def test_cpp_native_capability_is_available_through_cli(
     assert captured.err == ""
     assert response["artifact"]["result"]["displacement_m"] == "28"
     assert response["verification"]["status"] == "passed"
-    assert response["trace"][-2]["event"] == "cpp_native_cross_checked"
+    assert response["trace"][-2]["event"] == "native_kinematics_cross_checked"
 
 
-def test_cpp_native_capability_is_available_through_web_api(
-    native_solver, workbench_server_factory
+@pytest.mark.parametrize("backend", ["cpp", "c", "csharp"])
+def test_native_capability_is_available_through_web_api(
+    backend, request, workbench_server_factory
 ):
+    solver_fixture = {
+        "cpp": "native_solver",
+        "c": "native_c_solver",
+        "csharp": "native_csharp_solver",
+    }[backend]
+    native_solver = request.getfixturevalue(solver_fixture)
     base_url = workbench_server_factory(native_solver)
 
     status, response = _post_motion_request(base_url)
@@ -222,7 +349,7 @@ def test_cpp_native_capability_is_available_through_web_api(
     assert status == 200
     assert response["artifact"]["result"]["displacement_m"] == "28"
     assert response["verification"]["status"] == "passed"
-    assert response["trace"][-2]["event"] == "cpp_native_cross_checked"
+    assert response["trace"][-2]["event"] == "native_kinematics_cross_checked"
 
 
 def test_web_api_returns_explicit_error_for_native_mismatch(
@@ -278,6 +405,36 @@ def test_cpp_native_backend_rejects_non_solve_requests(native_solver):
             request,
             native_kinematics_executable=str(native_solver),
         )
+
+
+@pytest.mark.parametrize("backend", ["c", "csharp"])
+def test_native_backend_rejects_negative_time(backend, request):
+    solver = request.getfixturevalue(f"native_{backend}_solver")
+    result = subprocess.run(
+        [str(solver), "3", "2", "-1"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "time_s must be non-negative" in result.stderr
+
+
+@pytest.mark.parametrize("backend", ["c", "csharp"])
+def test_native_backend_rejects_inexact_input(backend, request):
+    solver = request.getfixturevalue(f"native_{backend}_solver")
+    result = subprocess.run(
+        [str(solver), "3.5", "2", "1"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "exact integer or fraction strings" in result.stderr
 
 
 @pytest.mark.parametrize(

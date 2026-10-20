@@ -106,9 +106,9 @@ Every vertical slice should answer:
 ## Current next step
 
 The student/teacher shell, request processor, exact math path, lesson schema,
-cross-language contract vectors, a versioned three-concept graph, and an
-opt-in native C++ constant-acceleration capability with a cross-checked Python
-adapter are present. The local
+cross-language contract vectors, a versioned three-concept graph, and
+opt-in C, C++, and C# constant-acceleration capabilities with a cross-checked
+Python adapter are present. The local
 `/teacher` studio connects one original
 constant-acceleration problem to the verified lesson draft compiler and
 displays the scenes, checks, trace, and review/rights blockers. It remains

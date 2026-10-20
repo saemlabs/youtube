@@ -23,15 +23,16 @@ opens the focused student page.
 
 Python is the current application and orchestration layer. It owns request
 validation, corpus/provenance checks, routing, user-facing errors, and the
-current verified math path. C, C++, and C#/.NET are future implementation
-languages for engine capabilities.
+canonical verified math path. C, C++, and C#/.NET currently implement one
+opt-in native capability; they are not yet complete replacements for Python
+orchestration or the full engine.
 
-Before a native component is introduced, define a versioned, language-neutral
+For each additional native component, define a versioned, language-neutral
 capability request and response from the existing student/engine contract.
-Then integrate the component behind the capability boundary and require it to
-pass the same conformance vectors as the Python implementation. The C/C++
-boundary and C#/.NET transport should be selected for a specific capability
-and measurable need; they must not create separate question schemas,
+Integrate it behind the capability boundary and require it to pass the same
+conformance vectors as the Python implementation. The C/C++
+boundary and C#/.NET transport are selected for a specific capability and
+measurable need; they must not create separate question schemas,
 verification policies, or user-facing APIs.
 
 The first executable compatibility baseline is
@@ -42,18 +43,38 @@ ordered trace layers, verification status, and invalid-input rejection. Python
 runs these vectors against the canonical processor in
 [`tests/test_contract_vectors.py`](../tests/test_contract_vectors.py).
 
-The first native experiment is
+The first native capability is exact constant-acceleration kinematics:
 [`native/cpp/constant_acceleration.cpp`](../native/cpp/constant_acceleration.cpp),
-a bounded exact-arithmetic C++17 command-line capability. Its conformance test
-compiles the source and compares the result object against the integer and
-fractional constant-acceleration contract vectors. An explicit Python adapter
-can invoke it through `saemphysics interact --native-kinematics PATH` or
+[`native/c/constant_acceleration.c`](../native/c/constant_acceleration.c), and
+[`native/csharp/Program.cs`](../native/csharp/Program.cs). Each implements
+bounded exact rational arithmetic and emits the same result sub-artifact.
+The C and C++ implementations use compiler-supported 128-bit integers; C#
+uses `BigInteger` while applying the same input bounds. Tests compile all
+available implementations and compare them with shared vectors covering
+integer, fractional, negative-acceleration, and zero-acceleration cases.
+An explicit Python adapter can invoke any resulting executable through
+`saemphysics interact --native-kinematics PATH` or
 `saemphysics web --native-kinematics PATH`. The adapter compares the native
 result exactly with the canonical Python solver, retains Python verification,
 and records the native execution in the trace. A mismatch, invalid response,
 timeout, or process failure is an explicit error; there is no silent fallback.
-The native component still does not implement the complete `StudentResponse`,
-verification, or trace contract itself, and Python remains authoritative.
+The native programs still do not implement the complete `StudentResponse`,
+verification, or trace contract themselves, and Python remains authoritative.
+
+This is a deliberately narrow engineering step informed by the uploaded
+programming, computation, calculus, and mechanics references: keep one logical
+capability contract independent of its implementation language, make exact
+state and limits visible, and validate the concrete mechanism before
+generalizing it. Feynman's mechanics discussion builds distance from velocity
+and velocity from acceleration through integration; this implementation uses
+the corresponding constant-acceleration model `v(t) = u + at` and displacement
+as the integral of velocity. Euler's complex-exponential identity is not
+needed for this scalar mechanics capability; it belongs in later typed
+wave/phase work rather than being forced into this model. Neither this
+capability nor the language split is a quantum algorithm or evidence of a
+quantum advantage. The uploaded C* material's distinction between logical data
+positions and physical layout is a useful future design constraint, not a
+reason to label this scalar solver as parallel or hardware-independent.
 
 Initial constraints:
 

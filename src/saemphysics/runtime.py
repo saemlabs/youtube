@@ -75,11 +75,11 @@ def _execute_native_kinematics(
         )
     except (OSError, subprocess.TimeoutExpired) as error:
         raise NativeBackendError(
-            f"Native C++ capability could not run: {error}"
+            f"Native kinematics capability could not run: {error}"
         ) from error
     if completed.returncode != 0:
         detail = completed.stderr.strip() or f"exit status {completed.returncode}"
-        raise NativeBackendError(f"Native C++ capability failed: {detail}")
+        raise NativeBackendError(f"Native kinematics capability failed: {detail}")
     try:
         payload = json.loads(completed.stdout)
         expected_fields = {
@@ -96,7 +96,7 @@ def _execute_native_kinematics(
         return KinematicsResult(**payload)
     except (json.JSONDecodeError, TypeError, ValueError) as error:
         raise NativeBackendError(
-            f"Native C++ capability returned invalid JSON: {error}"
+            f"Native kinematics capability returned invalid JSON: {error}"
         ) from error
 
 
@@ -193,7 +193,7 @@ def execute_plan(
             )
             if native_result != python_reference:
                 raise NativeBackendError(
-                    "Native C++ result does not match the canonical Python result"
+                    "Native kinematics result does not match the canonical Python result"
                 )
             result = native_result
         verification: VerificationReport | MathVerificationReport = (
@@ -206,12 +206,12 @@ def execute_plan(
         TraceEvent(
             layer="runtime",
             event=(
-                "cpp_native_cross_checked"
+                "native_kinematics_cross_checked"
                 if native_result is not None
                 else request.operation
             ),
             details=(
-                "Executed the C++17 capability and cross-checked its exact result "
+                "Executed the configured native capability and cross-checked its exact result "
                 "against the canonical Python solver."
                 if native_result is not None
                 else f"Executed the {request.numeric_mode.value} Python math backend."

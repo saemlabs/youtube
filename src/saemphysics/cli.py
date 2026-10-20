@@ -134,7 +134,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     interact_parser.add_argument(
         "--native-kinematics",
-        help="opt in to the cross-checked C++ constant-acceleration executable",
+        help="opt in to a cross-checked native constant-acceleration executable",
     )
     list_parser = commands.add_parser(
         "list-questions",
@@ -168,7 +168,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     web_parser.add_argument("--port", type=int, default=8000)
     web_parser.add_argument(
         "--native-kinematics",
-        help="opt in to the cross-checked C++ constant-acceleration executable",
+        help="opt in to a cross-checked native constant-acceleration executable",
     )
     args = parser.parse_args(argv)
 

@@ -3,7 +3,7 @@
 ## Repository map
 
 - `src/saemphysics/`: typed models, exact solvers, compiler/runtime, and lesson pipeline.
-- `native/cpp/`: opt-in C++ capabilities, cross-checked by the Python engine.
+- `native/`: opt-in C, C++, and C# capabilities, cross-checked by Python.
 - `tests/`: mathematical, execution, and pipeline checks.
 - `examples/`: runnable examples and JSON requests.
 - `web/`: local browser workbench and styles for the Python-rendered student page.
@@ -62,8 +62,8 @@ expose it publicly.
 Open `/student` on the same local server for the focused Python-rendered
 student/teacher page. It links to the SaemPhysics YouTube channel and routes
 practice and answer submission through the same central processor. The
-planned C/C++/C#/.NET language boundaries are documented in the
-[unified engine direction](./docs/ENGINE_ARCHITECTURE.md).
+native C/C++/C# capability and remaining language boundaries are documented
+in the [unified engine direction](./docs/ENGINE_ARCHITECTURE.md).
 
 Open `/teacher` for the local teacher lesson studio. It verifies an original
 constant-acceleration example and renders an unsaved lesson draft with solver

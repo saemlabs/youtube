@@ -55,8 +55,9 @@ strict, provenance-aware format for a question before collecting a real corpus.
    loopback-only and not a public production service.
    A focused Python-rendered `/student` page now links the SaemPhysics channel
    and routes practice and grading through that same processor. The
-   language-neutral contract remains the integration boundary; C/C++ and
-   C#/.NET engine modules are future capabilities, not separate processors.
+   language-neutral contract remains the integration boundary. An opt-in
+   constant-acceleration capability now has C, C++, and C# implementations;
+   Python cross-checks their outputs and remains the canonical processor.
    The `/teacher` studio now turns an original constant-acceleration example
    into a verified, renderer-independent lesson draft with visible checks,
    trace, and review/rights blockers. It is stateless and does not render or

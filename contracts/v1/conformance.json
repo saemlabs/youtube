@@ -108,6 +108,74 @@
       }
     },
     {
+      "id": "fractional-time-and-deceleration",
+      "request": {
+        "intent": "solve",
+        "calculation": {
+          "operation": "solve_constant_acceleration",
+          "question_id": "contract-motion-fractional-time",
+          "initial_velocity_m_s": "1/3",
+          "acceleration_m_s2": "-2/3",
+          "time_s": "3/2"
+        }
+      },
+      "expected": {
+        "status": "completed",
+        "artifact": {
+          "question_id": "contract-motion-fractional-time",
+          "result": {
+            "initial_velocity_m_s": "1/3",
+            "acceleration_m_s2": "-2/3",
+            "time_s": "3/2",
+            "displacement_m": "-1/4",
+            "final_velocity_m_s": "-2/3"
+          }
+        },
+        "verification_status": "passed",
+        "trace_layers": [
+          "semantic_ir",
+          "execution_ir",
+          "machine_ir",
+          "runtime",
+          "verification"
+        ]
+      }
+    },
+    {
+      "id": "zero-acceleration-negative-velocity",
+      "request": {
+        "intent": "solve",
+        "calculation": {
+          "operation": "solve_constant_acceleration",
+          "question_id": "contract-motion-zero-acceleration",
+          "initial_velocity_m_s": "-5/2",
+          "acceleration_m_s2": "0",
+          "time_s": "2/3"
+        }
+      },
+      "expected": {
+        "status": "completed",
+        "artifact": {
+          "question_id": "contract-motion-zero-acceleration",
+          "result": {
+            "initial_velocity_m_s": "-5/2",
+            "acceleration_m_s2": "0",
+            "time_s": "2/3",
+            "displacement_m": "-5/3",
+            "final_velocity_m_s": "-5/2"
+          }
+        },
+        "verification_status": "passed",
+        "trace_layers": [
+          "semantic_ir",
+          "execution_ir",
+          "machine_ir",
+          "runtime",
+          "verification"
+        ]
+      }
+    },
+    {
       "id": "exact-definite-integral",
       "request": {
         "intent": "solve",
