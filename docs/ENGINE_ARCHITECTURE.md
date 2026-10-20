@@ -23,8 +23,8 @@ opens the focused student page.
 
 Python is the current application and orchestration layer. It owns request
 validation, corpus/provenance checks, routing, user-facing errors, and the
-current verified math path. C, C++, and C#/.NET are planned implementation
-languages for future engine capabilities, not active backends yet.
+current verified math path. C, C++, and C#/.NET are future implementation
+languages for engine capabilities.
 
 Before a native component is introduced, define a versioned, language-neutral
 capability request and response from the existing student/engine contract.
@@ -41,6 +41,19 @@ derivative, constant-acceleration, definite-integral, and linear-system results,
 ordered trace layers, verification status, and invalid-input rejection. Python
 runs these vectors against the canonical processor in
 [`tests/test_contract_vectors.py`](../tests/test_contract_vectors.py).
+
+The first native experiment is
+[`native/cpp/constant_acceleration.cpp`](../native/cpp/constant_acceleration.cpp),
+a bounded exact-arithmetic C++17 command-line capability. Its conformance test
+compiles the source and compares the result object against the integer and
+fractional constant-acceleration contract vectors. An explicit Python adapter
+can invoke it through `saemphysics interact --native-kinematics PATH` or
+`saemphysics web --native-kinematics PATH`. The adapter compares the native
+result exactly with the canonical Python solver, retains Python verification,
+and records the native execution in the trace. A mismatch, invalid response,
+timeout, or process failure is an explicit error; there is no silent fallback.
+The native component still does not implement the complete `StudentResponse`,
+verification, or trace contract itself, and Python remains authoritative.
 
 Initial constraints:
 

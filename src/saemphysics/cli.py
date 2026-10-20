@@ -10,6 +10,7 @@ from saemphysics.concepts import load_concept_graph
 from saemphysics.ir import SemanticIR, compile_request
 from saemphysics.models import QuestionRecord
 from saemphysics.runtime import execute_plan
+from saemphysics.runtime import NativeBackendError
 from saemphysics.sources import (
     SourceManifest,
     load_question_corpus,
@@ -131,6 +132,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         default="data/concepts.json",
         help="versioned concept graph (default: data/concepts.json)",
     )
+    interact_parser.add_argument(
+        "--native-kinematics",
+        help="opt in to the cross-checked C++ constant-acceleration executable",
+    )
     list_parser = commands.add_parser(
         "list-questions",
         help="list selectable questions without exposing answer keys",
@@ -161,10 +166,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     web_parser.add_argument("--host", default="127.0.0.1")
     web_parser.add_argument("--port", type=int, default=8000)
+    web_parser.add_argument(
+        "--native-kinematics",
+        help="opt in to the cross-checked C++ constant-acceleration executable",
+    )
     args = parser.parse_args(argv)
 
     if args.command == "web":
-        serve(args.host, args.port)
+        serve(
+            args.host,
+            args.port,
+            native_kinematics_executable=args.native_kinematics,
+        )
         return 0
 
     try:
@@ -305,8 +318,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 output = process_student_request(
                     request,
                     question_resolver=resolver,
+                    native_kinematics_executable=args.native_kinematics,
                 ).model_dump(mode="json")
-    except (OSError, ValueError) as error:
+    except (NativeBackendError, OSError, ValueError) as error:
         print(f"saemphysics: {error}", file=sys.stderr)
         return 2
 

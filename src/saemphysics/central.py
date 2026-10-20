@@ -7,7 +7,7 @@ from pydantic import Field, model_validator
 from saemphysics.ir import SemanticIR, compile_request
 from saemphysics.lesson import compile_lesson, lesson_publication_decision
 from saemphysics.models import QuestionRecord, SolutionStatus, StrictModel
-from saemphysics.runtime import execute_plan
+from saemphysics.runtime import NativeBackendError, execute_plan
 
 
 class StudentRequest(StrictModel):
@@ -140,8 +140,13 @@ def _question_has_reviewed_solution(question: QuestionRecord) -> bool:
 def process_student_request(
     request: StudentRequest,
     question_resolver: Callable[[str], QuestionRecord] | None = None,
+    native_kinematics_executable: str | None = None,
 ) -> StudentResponse:
     """Route a student request through verified, explicitly supported workflows."""
+    if native_kinematics_executable is not None and request.intent != "solve":
+        raise ValueError(
+            "The configured native C++ backend can be used only for solve requests"
+        )
     if request.intent in {"start_test", "submit_test"}:
         if question_resolver is None:
             raise ValueError(
@@ -258,7 +263,17 @@ def process_student_request(
     if request.intent == "solve":
         if request.calculation is None:
             raise ValueError("solve request is missing its calculation")
-        execution = execute_plan(compile_request(request.calculation))
+        if (
+            native_kinematics_executable is not None
+            and request.calculation.operation != "solve_constant_acceleration"
+        ):
+            raise ValueError(
+                "The configured native C++ backend supports only constant acceleration"
+            )
+        execution = execute_plan(
+            compile_request(request.calculation),
+            native_kinematics_executable=native_kinematics_executable,
+        )
         return StudentResponse(
             intent=request.intent,
             status="completed",

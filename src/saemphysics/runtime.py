@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+import json
+from pathlib import Path
+import subprocess
 
 from saemphysics.ir import (
     CompiledPlan,
@@ -47,6 +50,56 @@ class RuntimeResult:
     trace: tuple[TraceEvent, ...]
 
 
+class NativeBackendError(RuntimeError):
+    """A configured native capability failed to satisfy its result contract."""
+
+
+def _execute_native_kinematics(
+    executable: str | Path,
+    initial_velocity_m_s: str,
+    acceleration_m_s2: str,
+    time_s: str,
+) -> KinematicsResult:
+    try:
+        completed = subprocess.run(
+            [
+                str(executable),
+                initial_velocity_m_s,
+                acceleration_m_s2,
+                time_s,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise NativeBackendError(
+            f"Native C++ capability could not run: {error}"
+        ) from error
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or f"exit status {completed.returncode}"
+        raise NativeBackendError(f"Native C++ capability failed: {detail}")
+    try:
+        payload = json.loads(completed.stdout)
+        expected_fields = {
+            "initial_velocity_m_s",
+            "acceleration_m_s2",
+            "time_s",
+            "displacement_m",
+            "final_velocity_m_s",
+        }
+        if not isinstance(payload, dict) or set(payload) != expected_fields:
+            raise ValueError("Native result must contain exactly the five motion fields")
+        if any(not isinstance(value, str) for value in payload.values()):
+            raise ValueError("Native motion result fields must be exact strings")
+        return KinematicsResult(**payload)
+    except (json.JSONDecodeError, TypeError, ValueError) as error:
+        raise NativeBackendError(
+            f"Native C++ capability returned invalid JSON: {error}"
+        ) from error
+
+
 def _execute_math_request(plan: CompiledPlan):
     request = plan.semantic_ir
     if request.operation == "differentiate":
@@ -83,7 +136,10 @@ def _execute_math_request(plan: CompiledPlan):
     return result, verification
 
 
-def execute_plan(plan: CompiledPlan) -> RuntimeResult:
+def execute_plan(
+    plan: CompiledPlan,
+    native_kinematics_executable: str | Path | None = None,
+) -> RuntimeResult:
     """Execute a validated prototype plan and retain a layer-by-layer trace."""
     expected = compile_request(plan.semantic_ir)
     if plan.execution_ir != expected.execution_ir:
@@ -112,6 +168,7 @@ def execute_plan(plan: CompiledPlan) -> RuntimeResult:
             ),
         ),
     ]
+    native_result: KinematicsResult | None = None
 
     if request.operation == "solve_constant_acceleration":
         if (
@@ -120,11 +177,25 @@ def execute_plan(plan: CompiledPlan) -> RuntimeResult:
             or request.time_s is None
         ):
             raise ValueError("Motion request is missing required inputs")
-        result = solve_constant_acceleration(
+        python_reference = solve_constant_acceleration(
             request.initial_velocity_m_s,
             request.acceleration_m_s2,
             request.time_s,
         )
+        if native_kinematics_executable is None:
+            result = python_reference
+        else:
+            native_result = _execute_native_kinematics(
+                native_kinematics_executable,
+                request.initial_velocity_m_s,
+                request.acceleration_m_s2,
+                request.time_s,
+            )
+            if native_result != python_reference:
+                raise NativeBackendError(
+                    "Native C++ result does not match the canonical Python result"
+                )
+            result = native_result
         verification: VerificationReport | MathVerificationReport = (
             verify_constant_acceleration(result)
         )
@@ -134,8 +205,17 @@ def execute_plan(plan: CompiledPlan) -> RuntimeResult:
     trace.append(
         TraceEvent(
             layer="runtime",
-            event=request.operation,
-            details=f"Executed the {request.numeric_mode.value} Python math backend.",
+            event=(
+                "cpp_native_cross_checked"
+                if native_result is not None
+                else request.operation
+            ),
+            details=(
+                "Executed the C++17 capability and cross-checked its exact result "
+                "against the canonical Python solver."
+                if native_result is not None
+                else f"Executed the {request.numeric_mode.value} Python math backend."
+            ),
         )
     )
     trace.append(

@@ -9,6 +9,22 @@ saemphysics interact examples/requests/student_solve.json
 saemphysics interact -
 ```
 
+The C++ constant-acceleration capability is optional and must be selected
+explicitly after building it:
+
+```bash
+c++ -std=c++17 -O2 -Wall -Wextra -Werror \
+  native/cpp/constant_acceleration.cpp -o /tmp/saemphysics-kinematics
+saemphysics interact examples/requests/student_solve.json \
+  --native-kinematics /tmp/saemphysics-kinematics
+```
+
+For the local web workbench, pass the same executable at server startup:
+`saemphysics web --native-kinematics /path/to/saemphysics-kinematics`.
+The native result is cross-checked exactly against Python before use; failures
+are surfaced explicitly and never trigger silent fallback. The option supports
+only constant-acceleration solve requests. Python remains the default.
+
 The interactive browser workbench uses the same central router through a
 local-only HTTP adapter:
 

@@ -74,6 +74,40 @@
       }
     },
     {
+      "id": "fractional-constant-acceleration",
+      "request": {
+        "intent": "solve",
+        "calculation": {
+          "operation": "solve_constant_acceleration",
+          "question_id": "contract-motion-fractional",
+          "initial_velocity_m_s": "4",
+          "acceleration_m_s2": "3/2",
+          "time_s": "2"
+        }
+      },
+      "expected": {
+        "status": "completed",
+        "artifact": {
+          "question_id": "contract-motion-fractional",
+          "result": {
+            "initial_velocity_m_s": "4",
+            "acceleration_m_s2": "3/2",
+            "time_s": "2",
+            "displacement_m": "11",
+            "final_velocity_m_s": "7"
+          }
+        },
+        "verification_status": "passed",
+        "trace_layers": [
+          "semantic_ir",
+          "execution_ir",
+          "machine_ir",
+          "runtime",
+          "verification"
+        ]
+      }
+    },
+    {
       "id": "exact-definite-integral",
       "request": {
         "intent": "solve",

@@ -3,6 +3,7 @@
 ## Repository map
 
 - `src/saemphysics/`: typed models, exact solvers, compiler/runtime, and lesson pipeline.
+- `native/cpp/`: opt-in C++ capabilities, cross-checked by the Python engine.
 - `tests/`: mathematical, execution, and pipeline checks.
 - `examples/`: runnable examples and JSON requests.
 - `web/`: local browser workbench and styles for the Python-rendered student page.

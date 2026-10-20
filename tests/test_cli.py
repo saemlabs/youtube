@@ -203,10 +203,26 @@ def test_web_command_starts_local_interface_with_requested_address(monkeypatch):
     from saemphysics import cli
 
     calls = []
-    monkeypatch.setattr(cli, "serve", lambda host, port: calls.append((host, port)))
+    monkeypatch.setattr(
+        cli,
+        "serve",
+        lambda host, port, native_kinematics_executable=None: calls.append(
+            (host, port, native_kinematics_executable)
+        ),
+    )
 
-    assert cli.main(["web", "--host", "localhost", "--port", "8123"]) == 0
-    assert calls == [("localhost", 8123)]
+    assert cli.main(
+        [
+            "web",
+            "--host",
+            "localhost",
+            "--port",
+            "8123",
+            "--native-kinematics",
+            "/opt/saemphysics/native-kinematics",
+        ]
+    ) == 0
+    assert calls == [("localhost", 8123, "/opt/saemphysics/native-kinematics")]
 
 
 def test_cli_runs_a_test_and_grades_submitted_answers(tmp_path, capsys):

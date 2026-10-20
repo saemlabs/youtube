@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from saemphysics.central import StudentRequest, process_student_request
 from saemphysics.concepts import load_concept_graph
 from saemphysics.models import QuestionRecord
+from saemphysics.runtime import NativeBackendError
 from saemphysics.sources import SourceManifest, load_question_corpus
 from saemphysics.student_frontend import render_student_page
 from saemphysics.teacher_frontend import render_teacher_page
@@ -41,6 +42,7 @@ def create_server(
     host: str = "127.0.0.1",
     port: int = 8000,
     project_root: str | Path | None = None,
+    native_kinematics_executable: str | Path | None = None,
 ) -> ThreadingHTTPServer:
     """Create a local-only workbench server with a validated question corpus."""
     if not _loopback_host(host):
@@ -221,9 +223,22 @@ def create_server(
                 response = process_student_request(
                     request,
                     question_resolver=resolve_question,
+                    native_kinematics_executable=(
+                        str(native_kinematics_executable)
+                        if native_kinematics_executable is not None
+                        else None
+                    ),
                 )
-            except (json.JSONDecodeError, UnicodeDecodeError, ValidationError, ValueError) as error:
+            except (
+                json.JSONDecodeError,
+                UnicodeDecodeError,
+                ValidationError,
+                ValueError,
+            ) as error:
                 self._send_json(400, {"error": str(error)})
+                return
+            except NativeBackendError as error:
+                self._send_json(502, {"error": str(error)})
                 return
             self._send_json(200, response.model_dump(mode="json"))
 
@@ -431,9 +446,15 @@ def serve(
     host: str = "127.0.0.1",
     port: int = 8000,
     project_root: str | Path | None = None,
+    native_kinematics_executable: str | Path | None = None,
 ) -> None:
     """Run the local development workbench until interrupted."""
-    server = create_server(host, port, project_root)
+    server = create_server(
+        host,
+        port,
+        project_root,
+        native_kinematics_executable,
+    )
     print(f"SaemPhysics workbench: http://{host}:{server.server_port}")
     try:
         server.serve_forever()
