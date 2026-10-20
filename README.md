@@ -1,5 +1,109 @@
 #### Build SaemPhysics as an exam-to-visual-explanation engine
 
+## Working foundation
+
+The initial Python vertical slice defines a canonical question record, an exact
+constant-acceleration solver, and a verification gate that blocks publication
+until both solver checks and human review pass and source rights are cleared.
+The sample in `examples/constant_acceleration_demo.py` is synthetic; it is not
+an exam question.
+
+The next slice follows `New Architecture - cos ai.PDF`'s immediate gap:
+machine-independent Semantic IR → Execution IR → capability-checked planning →
+an explicit Python-backend Machine IR → execution → verification. Exact rational
+inputs remain exact, unsupported approximate execution is rejected, and each
+layer emits a trace event. The machine profile is declared by the application;
+it is not hardware discovery, native machine code, or a general cognitive
+kernel. Architecture v0.1 is a study baseline, not a frozen final design:
+future changes should follow further source study and tested architectural
+revisions rather than implementing every long-term layer at once.
+
+The lesson compiler adds versioned, renderer-independent scene plans with
+question/source field references, a learning objective, narration cues,
+visual actions, assumptions, derivation steps, and verification checks. It
+accepts only verified solutions, creates drafts rather than approved lessons,
+and preserves the separate human-review and source-rights publication gates.
+The first optional renderer example is a short Manim scene for the synthetic
+constant-acceleration lesson. Its motion model is independently testable and
+accepts only solver results that passed verification; the scene is still a
+preview, not an approved lesson or publication.
+
+## Mathematical working layer
+
+The newly added mathematics tools turn three study principles into executable
+behavior:
+
+- Feynman's computation-first approach: build a small mechanism, make each
+  layer's job visible, and distinguish what can be computed from what is
+  efficient or physically feasible. The current Python backend is not a claim
+  of hardware-independent execution.
+- Gilbert Strang's applied linear algebra: treat a matrix as an operator on
+  meaningful vectors, not merely a table of numbers. `solve_linear_system`
+  solves exact, square, nonsingular systems and checks the residual `A*x - b`;
+  it does not yet exploit sparse or specially structured matrices.
+- Calculus as connected models of change and accumulation: `differentiate`
+  checks symbolic rates; `definite_integral` checks a finite result against
+  antiderivative and endpoint evaluation on an interval established as
+  continuous.
+- The programming references' modularity and testing principles: math
+  functions are isolated from rendering, unsupported syntax fails explicitly,
+  and known results and failure cases are tested.
+
+These tools use a small AST-based arithmetic grammar rather than Python `eval`
+or unrestricted symbolic parsing. Inputs and outputs remain exact whenever
+the operation permits it. This is a tested math-library slice, not yet a new
+Semantic IR operation, general computer algebra system, numerical ODE engine,
+or automatic lesson generator.
+
+Try the calculus/linear-algebra example:
+
+```bash
+python examples/mathematics_demo.py
+```
+
+The implementation is informed by the local [Feynman computation text](./computation-Richard_P._Feynman-Feynman_Lectures_on_Computation__-Addison-Wesley(1996).docx),
+[Strang's Computational Science and Engineering notes](./Gilbert%20Strang%20MIT%20Computational%20Science%20and%20Engineering%20(1).docx),
+[Strang's Calculus](./mitres_18_001_gilbert%20strang.pdf),
+the [MIT Python programming text](./Python%20programming%20mit.pdf), and
+[MIT 6.01's systems course text](./mit6_01scs11_textbook%20(1).pdf).
+
+The other uploads are useful later, not prerequisites for this slice: the
+[C* guide](./CStarProgrammingGuide%20(1).pdf) studies shape-based data-parallel
+programming, the [C++ templates guide](./C%2B%2B%20Templates%20-%20The%20Complete%20Guide%20(Addison%20Wesley-2002).pdf)
+studies generic abstractions, [Napier's logarithm text](./Napier%20-%20construction%20of%20logarithm.pdf)
+provides historical mathematical context, and the quantum-algorithm material
+covers Fourier/phase-estimation and hidden-subgroup methods. These do not
+justify adding parallel or quantum backends before the ordinary math path is
+validated. The 14-page `algorithm for quantum computing.pdf` is image-only
+with no extractable text, so its contents were not used as implementation
+requirements.
+
+Set up and run the prototype with Python 3.10 or newer:
+
+```bash
+python -m pip install -e ".[dev]"
+pytest
+python examples/constant_acceleration_demo.py
+```
+
+To render the optional animation, install Manim's system dependencies using
+the [official installation guide](https://docs.manim.community/en/stable/installation.html),
+then install the animation extra and render the low-quality preview:
+
+```bash
+python -m pip install -e ".[dev,animation]"
+python -m manim -ql examples/constant_acceleration_scene.py ConstantAccelerationLesson
+```
+
+The scene uses ordinary text and geometric objects, not LaTeX-rendered
+equations. Rendering still requires Manim's supported system libraries and
+FFmpeg. Inspect the preview at normal speed; a successful render does not
+replace physics, visual, or human review.
+
+The existing `Exam Forecaster 1.html` and `Mock Tester 1.html` remain standalone
+browser prototypes. This foundation does not yet connect them to the Python
+pipeline.
+
 Your goal is bigger than an AI that solves NEET, JEE, MIT, and Olympiad questions. You want a system that understands 30 years of exam questions, identifies the underlying mathematical and physical ideas, verifies the answer independently, and turns the reasoning into a 3Blue1Brown-inspired visual lesson.
 
 The key is to build this as a tested Python application in GitHub Codespaces, not as one giant prompt to Gemini or DeepSeek.
@@ -125,8 +229,8 @@ src/teaching/
 Explanation plans, derivation steps and exam strategies.
 
 src/visuals/
-
-Manim scenes generated from verified explanation plans.
+Renderer-independent visual models and renderer-specific scene examples built
+from verified physics results.
 
 tests/
 
