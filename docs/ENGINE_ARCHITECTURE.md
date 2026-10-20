@@ -103,6 +103,25 @@ Initial constraints:
 - Keep local interfaces loopback-only until authentication, privacy, and
   deployment controls are designed.
 
+## Probabilistic state foundation
+
+[`src/saemphysics/probabilistic.py`](../src/saemphysics/probabilistic.py)
+provides a small, opt-in probability layer: stable Boltzmann weighting from
+caller-supplied energies, normalized state distributions, entropy, seeded
+sampling, and Bayesian updates from explicit likelihoods. It does not infer
+energies or likelihoods, reinterpret confidence or source provenance as
+probability, select answers for existing solve requests, or replace exact
+capability verification. The current mathematical and logical request paths
+remain deterministic until a specific problem defines candidate states,
+evidence, a probability model, and an independent acceptance check.
+
+The uploaded Feynman statistical-mechanics PDF is an 18-page study note rather
+than the source textbook. Its guidance motivates distinguishing a state from
+an ensemble and explicitly warns against treating free energy as a generic AI
+objective or rushing into a statistical-mechanics module. This implementation
+is only a reusable mathematical primitive; it makes no claim to reproduce
+Feynman's physical models or to provide a universal cognitive processor.
+
 ## Growth toward the larger vision
 
 The student/teacher workflow is the first vertical slice, not a separate
