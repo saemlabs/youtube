@@ -9,6 +9,7 @@ from saemphysics.central import StudentRequest, process_student_request
 from saemphysics.ir import SemanticIR, compile_request
 from saemphysics.models import QuestionRecord
 from saemphysics.runtime import execute_plan
+from saemphysics.sources import SourceManifest, validate_source_files
 
 
 def _read_json_object(path: str) -> dict[str, object]:
@@ -50,6 +51,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         "question",
         help="path to a question-record JSON file, or - to read from stdin",
     )
+    sources_parser = commands.add_parser(
+        "validate-sources",
+        help="validate a source manifest and its local file references",
+    )
+    sources_parser.add_argument(
+        "manifest",
+        help="path to a source manifest JSON file",
+    )
+    sources_parser.add_argument(
+        "--root",
+        default=".",
+        help="project root used to resolve manifest paths (default: current directory)",
+    )
     interact_parser = commands.add_parser(
         "interact",
         help="route a student request through the central processing interface",
@@ -73,6 +87,31 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "rights_status": question.source.rights_status.value,
                 "solution_status": question.solution.status.value,
                 "human_verified": question.review.human_verified,
+            }
+        elif args.command == "validate-sources":
+            manifest = SourceManifest.model_validate(
+                _read_json_object(args.manifest)
+            )
+            validate_source_files(manifest, args.root)
+            output = {
+                "valid": True,
+                "document_count": len(manifest.documents),
+                "rights_review_required": sum(
+                    document.rights_status.value == "review_required"
+                    for document in manifest.documents
+                ),
+                "ingestion_status_counts": {
+                    status: sum(
+                        document.ingestion_status == status
+                        for document in manifest.documents
+                    )
+                    for status in (
+                        "catalogued",
+                        "extraction_pending",
+                        "extracted",
+                        "human_reviewed",
+                    )
+                },
             }
         else:
             request = StudentRequest.model_validate(

@@ -57,6 +57,11 @@ subtopic (target: 10–20 records, not a mass PDF import).
   records its rights status, and is marked for review when transcription is
   uncertain.
 
+The uploaded reference documents have a catalog at
+[`data/sources.json`](../data/sources.json), validated by
+`saemphysics validate-sources`. This catalogs the supplied PDFs/DOCX only;
+selecting and licensing an exam paper remains a separate Month 2 decision.
+
 ## Month 3 — Reproducible document and question ingestion
 
 **Goal:** Reduce manual copying errors without treating OCR as truth.

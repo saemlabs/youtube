@@ -1,0 +1,179 @@
+{
+  "schema_version": "1.0",
+  "documents": [
+    {
+      "document_id": "computing-book-1-automatic-digital-composium",
+      "title": "Book 1 Automatic digital composium.PDF",
+      "category": "computing",
+      "path": "docs/computing/Book 1 Automatic digital composium.PDF"
+    },
+    {
+      "document_id": "computing-book-2-sicp",
+      "title": "Book 2 SICP.PDF",
+      "category": "computing",
+      "path": "docs/computing/Book 2 SICP.PDF"
+    },
+    {
+      "document_id": "computing-c-star-programming-guides",
+      "title": "C star Programming guides.PDF",
+      "category": "computing",
+      "path": "docs/computing/C star Programming guides.PDF"
+    },
+    {
+      "document_id": "computing-cpp-templates-complete-guide",
+      "title": "C++ Templates - The Complete Guide (Addison Wesley-2002).pdf",
+      "category": "computing",
+      "path": "docs/computing/C++ Templates - The Complete Guide (Addison Wesley-2002).pdf"
+    },
+    {
+      "document_id": "computing-cstar-programming-guide",
+      "title": "CStarProgrammingGuide (1).pdf",
+      "category": "computing",
+      "path": "docs/computing/CStarProgrammingGuide (1).pdf"
+    },
+    {
+      "document_id": "computing-feynmann-computation",
+      "title": "Feynmann computation.PDF",
+      "category": "computing",
+      "path": "docs/computing/Feynmann computation.PDF"
+    },
+    {
+      "document_id": "computing-gilbert-strang-cse",
+      "title": "Gilbert Strang MIT Computational Science and Engineering (1).docx",
+      "category": "computing",
+      "path": "docs/computing/Gilbert Strang MIT Computational Science and Engineering (1).docx"
+    },
+    {
+      "document_id": "computing-von-neumann-computer-and-brain",
+      "title": "John von Neumann, The Computer & the Brain, Third Edition (2012); the file contains the complete two-part structure- Part 1 .PDF",
+      "category": "computing",
+      "path": "docs/computing/John von Neumann, The Computer & the Brain, Third Edition (2012); the file contains the complete two-part structure- Part 1 .PDF"
+    },
+    {
+      "document_id": "computing-mit-python-programming",
+      "title": "Python programming mit.pdf",
+      "category": "computing",
+      "path": "docs/computing/Python programming mit.pdf"
+    },
+    {
+      "document_id": "computing-scip-mit",
+      "title": "SCIP MIT.docx",
+      "category": "computing",
+      "path": "docs/computing/SCIP MIT.docx"
+    },
+    {
+      "document_id": "computing-feynman-lectures-computation",
+      "title": "computation-Richard_P._Feynman-Feynman_Lectures_on_Computation__-Addison-Wesley(1996).docx",
+      "category": "computing",
+      "path": "docs/computing/computation-Richard_P._Feynman-Feynman_Lectures_on_Computation__-Addison-Wesley(1996).docx"
+    },
+    {
+      "document_id": "computing-mit-601-systems",
+      "title": "mit6_01scs11_textbook (1).pdf",
+      "category": "computing",
+      "path": "docs/computing/mit6_01scs11_textbook (1).pdf"
+    },
+    {
+      "document_id": "mathematics-napier-logarithm",
+      "title": "Napier - construction of logarithm.pdf",
+      "category": "mathematics",
+      "path": "docs/mathematics/Napier - construction of logarithm.pdf"
+    },
+    {
+      "document_id": "mathematics-mit-18001-calculus",
+      "title": "mitres_18_001_gilbert strang.pdf",
+      "category": "mathematics",
+      "path": "docs/mathematics/mitres_18_001_gilbert strang.pdf"
+    },
+    {
+      "document_id": "physics-feynman-statistical-mechanics-pdf",
+      "title": "Feynman Stastucal mechanics.PDF",
+      "category": "physics",
+      "path": "docs/physics/Feynman Stastucal mechanics.PDF"
+    },
+    {
+      "document_id": "physics-feynman-qed",
+      "title": "QED_ The Strange Theory of Light and Matter by Feynman.docx",
+      "category": "physics",
+      "path": "docs/physics/QED_ The Strange Theory of Light and Matter by Feynman.docx"
+    },
+    {
+      "document_id": "physics-feynman-statistical-mechanics-docx",
+      "title": "Statistical Mechanics_ feynmann.docx",
+      "category": "physics",
+      "path": "docs/physics/Statistical Mechanics_ feynmann.docx"
+    },
+    {
+      "document_id": "physics-feynman-lectures-volume-1",
+      "title": "V1- The Feynman Lectures on Physics, Volume 1_ Mainly Mechanics.docx",
+      "category": "physics",
+      "path": "docs/physics/V1- The Feynman Lectures on Physics, Volume 1_ Mainly Mechanics.docx"
+    },
+    {
+      "document_id": "physics-feynman-lectures-volume-2",
+      "title": "V2 - feynman-lectures-on-physics-vol 2 -electromagnetism-and-matter - volume 2 (1).docx",
+      "category": "physics",
+      "path": "docs/physics/V2 - feynman-lectures-on-physics-vol 2 -electromagnetism-and-matter - volume 2 (1).docx"
+    },
+    {
+      "document_id": "physics-feynman-lectures-volume-3",
+      "title": "V3- Feynman Lectures vol 3 on Quantum Mechanics 3.docx",
+      "category": "physics",
+      "path": "docs/physics/V3- Feynman Lectures vol 3 on Quantum Mechanics 3.docx"
+    },
+    {
+      "document_id": "quantum-arxiv-2110-00827v2",
+      "title": "2110.00827v2.pdf",
+      "category": "quantum",
+      "path": "docs/quantum/2110.00827v2.pdf"
+    },
+    {
+      "document_id": "quantum-algorithms-introduction",
+      "title": "algorithm for quantum computing.pdf",
+      "category": "quantum",
+      "path": "docs/quantum/algorithm for quantum computing.pdf"
+    },
+    {
+      "document_id": "quantum-caltech-phase-computation",
+      "title": "caltech - quantum state phase computation.pdf",
+      "category": "quantum",
+      "path": "docs/quantum/caltech - quantum state phase computation.pdf"
+    },
+    {
+      "document_id": "quantum-algorithm-notes",
+      "title": "notes on quantum algorithm.pdf",
+      "category": "quantum",
+      "path": "docs/quantum/notes on quantum algorithm.pdf"
+    },
+    {
+      "document_id": "vision-bismillah-document",
+      "title": "Bismillah-ir-Rahman-ir-Raheem.PDF",
+      "category": "vision",
+      "path": "docs/vision/Bismillah-ir-Rahman-ir-Raheem.PDF"
+    },
+    {
+      "document_id": "vision-medina-constitution",
+      "title": "Constitution-Medina.pdf",
+      "category": "vision",
+      "path": "docs/vision/Constitution-Medina.pdf"
+    },
+    {
+      "document_id": "vision-cos-ai-architecture",
+      "title": "New Architecture - cos ai.PDF",
+      "category": "vision",
+      "path": "docs/vision/New Architecture - cos ai.PDF"
+    },
+    {
+      "document_id": "vision-animation-studio-textbook",
+      "title": "SaemPhysics_AI_Animation_Studio_Textbook-1.pdf",
+      "category": "vision",
+      "path": "docs/vision/SaemPhysics_AI_Animation_Studio_Textbook-1.pdf"
+    },
+    {
+      "document_id": "vision-future-roadmap",
+      "title": "SaemPhysics_Future_Roadmap_Knowledge_to_Lecture_Engine-1.pdf",
+      "category": "vision",
+      "path": "docs/vision/SaemPhysics_Future_Roadmap_Knowledge_to_Lecture_Engine-1.pdf"
+    }
+  ]
+}

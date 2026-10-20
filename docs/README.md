@@ -7,6 +7,17 @@ application package. Filenames and original documents are preserved.
 See the [phased build roadmap](./ROADMAP.md) for monthly milestones and the
 current first step.
 
+The machine-readable catalog is [`data/sources.json`](../data/sources.json).
+Validate every catalog entry and its local file with:
+
+```bash
+saemphysics validate-sources data/sources.json
+```
+
+All uploaded sources currently remain `review_required` for rights and
+`catalogued` for ingestion. The catalog does not assert that a document is
+licensed for redistribution or that any question has been extracted.
+
 ## Vision and project design
 
 - [`New Architecture - cos ai.PDF`](./vision/New%20Architecture%20-%20cos%20ai.PDF) — architecture proposal.
