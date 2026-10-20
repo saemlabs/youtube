@@ -9,8 +9,9 @@ saemphysics interact examples/requests/student_solve.json
 saemphysics interact -
 ```
 
-The native constant-acceleration capability is optional and must be selected
-explicitly after building a C, C++, or C# implementation:
+The native constant-acceleration and bounded linear-system capabilities are
+optional and must be selected explicitly after building a C, C++, or C#
+implementation:
 
 ```bash
 cc -std=c11 -O2 -Wall -Wextra -Werror \
@@ -28,7 +29,8 @@ three executables to `--native-kinematics`, including at local web startup:
 `saemphysics web --native-kinematics /path/to/saemphysics-kinematics`.
 Every native result is cross-checked exactly against Python before use;
 failures are surfaced explicitly and never trigger silent fallback. The option
-supports only constant-acceleration solve requests. Python remains the default.
+supports constant-acceleration and square linear-system solves of dimensions
+1 through 3. Python remains the default.
 
 ## Core processing boundary
 
@@ -40,8 +42,13 @@ selected native backend, the process invocation is:
 
 ```text
 EXECUTABLE --core-v1 solve_constant_acceleration INITIAL_VELOCITY ACCELERATION TIME
+EXECUTABLE --core-v1 solve_linear_system N A-values... b-values...
 ```
 
+For linear systems, matrix values are row-major followed by right-hand-side
+values. Dimensions are limited to 1 through 3; reduced rational numerators
+must have magnitude at most 1000 and denominators at most 1000. Singular
+matrices are rejected because the capability returns unique solutions only.
 Numeric inputs are exact integer/fraction strings. The native process returns
 the strict JSON envelope defined by
 [`native-capability-response.schema.json`](../contracts/v1/native-capability-response.schema.json):
@@ -53,8 +60,8 @@ capabilities, malformed outputs, nonzero exits, timeouts, and result
 mismatches fail explicitly; native code does not receive arbitrary source,
 commands, or unvalidated request JSON.
 
-This is one complete solve vertical slice, not a general native orchestrator.
-Practice, grading, lesson generation, calculus, and linear algebra continue
+These are bounded solve vertical slices, not a general native orchestrator.
+Practice, grading, lesson generation, calculus, and other operations continue
 through the capabilities currently registered by the canonical Python router.
 Add a capability by defining its typed inputs, output/check schema, bounds,
 shared vectors, implementation, and frontend routing before enabling it.

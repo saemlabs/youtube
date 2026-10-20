@@ -43,7 +43,8 @@ ordered trace layers, verification status, and invalid-input rejection. Python
 runs these vectors against the canonical processor in
 [`tests/test_contract_vectors.py`](../tests/test_contract_vectors.py).
 
-The first native capability is exact constant-acceleration kinematics:
+The native capabilities include exact constant-acceleration kinematics and
+bounded exact linear-system solving:
 [`native/cpp/constant_acceleration.cpp`](../native/cpp/constant_acceleration.cpp),
 [`native/c/constant_acceleration.c`](../native/c/constant_acceleration.c), and
 [`native/csharp/Program.cs`](../native/csharp/Program.cs). Each implements
@@ -58,7 +59,9 @@ An explicit Python adapter can invoke any resulting executable through
 result exactly with the canonical Python solver, retains Python verification,
 and records the native execution in the trace. A mismatch, invalid response,
 timeout, or process failure is an explicit error; there is no silent fallback.
-The native programs still do not implement the complete `StudentResponse`,
+The linear-system solver uses exact rational Gaussian elimination with row
+pivoting, dimensions 1 through 3, input numerator/denominator bounds of 1000,
+and rejects singular matrices. The native programs still do not implement the complete `StudentResponse`,
 verification, or trace contract themselves, and Python remains authoritative.
 
 The capability-level response envelope is versioned at

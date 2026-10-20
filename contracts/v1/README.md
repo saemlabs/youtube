@@ -19,14 +19,18 @@ wording is intentionally not standardized.
 The vectors cover the current exact derivative, constant-acceleration,
 definite-integral, and square linear-system capabilities. They are executable
 test inputs, not a claim that the full processor has native implementations.
-The first shared native capability is exact constant-acceleration kinematics,
-implemented in C, C++, and C# under `native/`. Each implementation is tested
-against every constant-acceleration vector here and emits the same five-field
-result artifact. An explicit Python adapter can invoke any of the executables;
-it cross-checks every result against the canonical Python solver, then retains
-Python verification and trace behavior. The native capability remains opt-in
-rather than the default backend and does not implement the complete
+The shared native capabilities are exact constant-acceleration kinematics and
+bounded exact square linear-system solves, implemented in C, C++, and C# under
+`native/`. Linear-system commands accept dimensions 1 through 3 and exact
+rational values with reduced numerator magnitude and denominator at most 1000;
+singular systems are rejected. An explicit Python adapter can invoke any
+executable and cross-checks every result against its canonical Python solver,
+then retains Python verification and trace behavior. Native capabilities
+remain opt-in rather than the default backend and do not implement the complete
 `StudentResponse`, verification report, or runtime trace.
+This slice does not implement the broader calculus, eigenvalue, iterative
+method, numerical-PDE, logarithm, or complex-exponential topics in the
+referenced books.
 
 The versioned native capability output envelope is specified in
 [`native-capability-response.schema.json`](./native-capability-response.schema.json).
@@ -34,9 +38,10 @@ It is intentionally narrower than the frontend contract: Python validates the
 whole `StudentRequest`, routes intent and corpus workflows, validates this
 capability envelope, cross-checks the exact result, performs canonical
 verification, and assembles the final response and ordered trace. The current
-native command protocol accepts only
-`--core-v1 solve_constant_acceleration INITIAL_VELOCITY ACCELERATION TIME`;
-other operations fail explicitly instead of being treated as successful work.
+native command protocol accepts
+`--core-v1 solve_constant_acceleration INITIAL_VELOCITY ACCELERATION TIME` or
+`--core-v1 solve_linear_system N A-values... b-values...`; other operations
+fail explicitly instead of being treated as successful work.
 
 The C and C++ implementations require GCC or Clang-compatible 128-bit integer
 extensions; the C++ source requires C++17 and the C source requires C11. The C#

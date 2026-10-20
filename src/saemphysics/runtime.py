@@ -143,6 +143,101 @@ def _execute_native_kinematics(
         ) from error
 
 
+def _execute_native_linear_system(
+    executable: str | Path,
+    coefficients: list[list[str]],
+    right_hand_side: list[str],
+) -> LinearSystemResult:
+    size = len(coefficients)
+    arguments = [
+        str(executable),
+        "--core-v1",
+        "solve_linear_system",
+        str(size),
+        *(value for row in coefficients for value in row),
+        *right_hand_side,
+    ]
+    try:
+        completed = subprocess.run(
+            arguments,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise NativeBackendError(
+            f"Native linear-system capability could not run: {error}"
+        ) from error
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or f"exit status {completed.returncode}"
+        raise NativeBackendError(
+            f"Native linear-system capability failed: {detail}"
+        )
+    try:
+        payload = json.loads(completed.stdout)
+        if not isinstance(payload, dict) or set(payload) != {
+            "protocol",
+            "capability",
+            "status",
+            "result",
+            "checks",
+        }:
+            raise ValueError("Native core response has unsupported or missing fields")
+        if (
+            payload.get("protocol") != "saemphysics.capability.v1"
+            or payload.get("capability") != "solve_linear_system"
+            or payload.get("status") != "completed"
+        ):
+            raise ValueError("Native core response has an unsupported protocol or status")
+        result_payload = payload.get("result")
+        expected_result_fields = {"solution", "determinant", "residuals"}
+        if (
+            not isinstance(result_payload, dict)
+            or set(result_payload) != expected_result_fields
+        ):
+            raise ValueError("Native linear-system result has unsupported or missing fields")
+        solution = result_payload.get("solution")
+        residuals = result_payload.get("residuals")
+        determinant = result_payload.get("determinant")
+        if (
+            not isinstance(solution, list)
+            or len(solution) != size
+            or not all(isinstance(value, str) for value in solution)
+            or not isinstance(residuals, list)
+            or len(residuals) != size
+            or not all(isinstance(value, str) for value in residuals)
+            or not isinstance(determinant, str)
+        ):
+            raise ValueError("Native linear-system results must be exact strings")
+        details = f"A*x - b = ({', '.join(residuals)})"
+        checks = payload.get("checks")
+        if (
+            not isinstance(checks, list)
+            or len(checks) != 1
+            or not isinstance(checks[0], dict)
+            or set(checks[0]) != {"name", "passed", "details"}
+            or checks[0].get("name") != "linear_system_residual"
+            or checks[0].get("passed") is not True
+            or checks[0].get("details") != details
+        ):
+            raise ValueError("Native core response must pass its residual check")
+        return LinearSystemResult(
+            solution=tuple(solution),
+            determinant=determinant,
+            residuals=tuple(residuals),
+            checks=(MathCheck(
+                name="linear_system_residual",
+                passed=True,
+                details=details,
+            ),),
+        )
+    except (json.JSONDecodeError, TypeError, ValueError) as error:
+        raise NativeBackendError(
+            f"Native linear-system capability returned invalid JSON: {error}"
+        ) from error
+
+
 def _execute_math_request(plan: CompiledPlan):
     request = plan.semantic_ir
     if request.operation == "differentiate":
@@ -212,6 +307,7 @@ def execute_plan(
         ),
     ]
     native_result: KinematicsResult | None = None
+    native_math_result: LinearSystemResult | None = None
 
     if request.operation == "solve_constant_acceleration":
         if (
@@ -242,6 +338,30 @@ def execute_plan(
         verification: VerificationReport | MathVerificationReport = (
             verify_constant_acceleration(result)
         )
+    elif (
+        request.operation == "solve_linear_system"
+        and native_kinematics_executable is not None
+    ):
+        if request.coefficients is None or request.right_hand_side is None:
+            raise ValueError("Linear-system request is missing required inputs")
+        python_reference = solve_linear_system(
+            request.coefficients,
+            request.right_hand_side,
+        )
+        native_math_result = _execute_native_linear_system(
+            native_kinematics_executable,
+            request.coefficients,
+            request.right_hand_side,
+        )
+        if native_math_result != python_reference:
+            raise NativeBackendError(
+                "Native linear-system result does not match the canonical Python result"
+            )
+        result = native_math_result
+        verification = MathVerificationReport(
+            status="passed" if all(check.passed for check in result.checks) else "failed",
+            checks=result.checks,
+        )
     else:
         result, verification = _execute_math_request(plan)
 
@@ -251,12 +371,17 @@ def execute_plan(
             event=(
                 "native_kinematics_cross_checked"
                 if native_result is not None
+                else "native_linear_system_cross_checked"
+                if native_math_result is not None
                 else request.operation
             ),
             details=(
                 "Executed the configured native capability and cross-checked its exact result "
                 "against the canonical Python solver after validating the v1 core envelope."
                 if native_result is not None
+                else "Executed the configured native capability and cross-checked its exact result "
+                "against the canonical Python solver after validating the v1 core envelope."
+                if native_math_result is not None
                 else f"Executed the {request.numeric_mode.value} Python math backend."
             ),
         )

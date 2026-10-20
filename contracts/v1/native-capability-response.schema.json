@@ -16,12 +16,17 @@
       "const": "saemphysics.capability.v1"
     },
     "capability": {
-      "const": "solve_constant_acceleration"
+      "enum": [
+        "solve_constant_acceleration",
+        "solve_linear_system"
+      ]
     },
     "status": {
       "const": "completed"
     },
     "result": {
+      "oneOf": [
+        {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -48,8 +53,15 @@
           "type": "string"
         }
       }
+        },
+        {
+          "$ref": "#/$defs/linearSystemResult"
+        }
+      ]
     },
     "checks": {
+      "oneOf": [
+        {
       "type": "array",
       "minItems": 3,
       "maxItems": 3,
@@ -65,9 +77,49 @@
         }
       ],
       "items": false
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/$defs/passedLinearSystemResidual"
+          }
+        }
+      ]
     }
   },
   "$defs": {
+    "linearSystemResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["solution", "determinant", "residuals"],
+      "properties": {
+        "solution": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": { "type": "string" }
+        },
+        "determinant": { "type": "string" },
+        "residuals": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "passedLinearSystemResidual": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "passed", "details"],
+      "properties": {
+        "name": { "const": "linear_system_residual" },
+        "passed": { "const": true },
+        "details": { "type": "string" }
+      }
+    },
     "passedInputBounds": {
       "type": "object",
       "additionalProperties": false,

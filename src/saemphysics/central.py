@@ -265,10 +265,12 @@ def process_student_request(
             raise ValueError("solve request is missing its calculation")
         if (
             native_kinematics_executable is not None
-            and request.calculation.operation != "solve_constant_acceleration"
+            and request.calculation.operation
+            not in {"solve_constant_acceleration", "solve_linear_system"}
         ):
             raise ValueError(
-                "The configured native backend supports only constant acceleration"
+                "The configured native backend supports only constant acceleration "
+                "and linear-system solves"
             )
         execution = execute_plan(
             compile_request(request.calculation),

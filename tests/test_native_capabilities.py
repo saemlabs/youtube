@@ -158,6 +158,14 @@ def _motion_vectors():
     ]
 
 
+def _linear_system_vectors():
+    return [
+        vector
+        for vector in _contract_vectors()["valid_vectors"]
+        if vector["request"]["calculation"]["operation"] == "solve_linear_system"
+    ]
+
+
 def _core_command(executable, calculation):
     return [
         str(executable),
@@ -527,6 +535,91 @@ def test_native_core_rejects_unsupported_operation(backend, request):
     assert result.returncode == 2
     assert result.stdout == ""
     assert "unsupported capability" in result.stderr
+
+
+@pytest.mark.parametrize("backend", ["cpp", "c", "csharp"])
+def test_native_linear_system_matches_reference_and_routes_through_processor(
+    backend, request
+):
+    solver_fixture = {
+        "cpp": "native_solver",
+        "c": "native_c_solver",
+        "csharp": "native_csharp_solver",
+    }[backend]
+    native_solver = request.getfixturevalue(solver_fixture)
+    vector = _linear_system_vectors()[0]
+    response = process_student_request(
+        StudentRequest.model_validate(vector["request"]),
+        native_kinematics_executable=str(native_solver),
+    )
+    payload = response.model_dump(mode="json")
+
+    assert payload["status"] == vector["expected"]["status"]
+    assert payload["artifact"] == vector["expected"]["artifact"]
+    assert payload["verification"]["status"] == "passed"
+    assert payload["trace"][-2]["event"] == "native_linear_system_cross_checked"
+
+
+@pytest.mark.parametrize("backend", ["cpp", "c", "csharp"])
+def test_native_linear_system_pivots_and_rejects_singular_inputs(backend, request):
+    solver_fixture = {
+        "cpp": "native_solver",
+        "c": "native_c_solver",
+        "csharp": "native_csharp_solver",
+    }[backend]
+    solver = request.getfixturevalue(solver_fixture)
+    pivoted = subprocess.run(
+        [
+            str(solver),
+            "--core-v1",
+            "solve_linear_system",
+            "2",
+            "0",
+            "2",
+            "1",
+            "1",
+            "4",
+            "5",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(pivoted.stdout)
+    assert payload["capability"] == "solve_linear_system"
+    assert payload["result"] == {
+        "solution": ["3", "2"],
+        "determinant": "-2",
+        "residuals": ["0", "0"],
+    }
+    assert payload["checks"] == [
+        {
+            "name": "linear_system_residual",
+            "passed": True,
+            "details": "A*x - b = (0, 0)",
+        }
+    ]
+
+    singular = subprocess.run(
+        [
+            str(solver),
+            "--core-v1",
+            "solve_linear_system",
+            "2",
+            "1",
+            "2",
+            "2",
+            "4",
+            "3",
+            "6",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert singular.returncode == 2
+    assert singular.stdout == ""
+    assert "singular" in singular.stderr
 
 
 @pytest.mark.parametrize(

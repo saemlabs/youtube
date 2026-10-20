@@ -1,9 +1,12 @@
 #include <charconv>
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -74,6 +77,13 @@ class Rational {
             left.denominator_ * right.denominator_);
     }
 
+    friend Rational operator-(const Rational& left, const Rational& right) {
+        return Rational(
+            left.numerator_ * right.denominator_ -
+                right.numerator_ * left.denominator_,
+            left.denominator_ * right.denominator_);
+    }
+
     friend Rational operator*(const Rational& left, const Rational& right) {
         return Rational(
             left.numerator_ * right.numerator_,
@@ -90,6 +100,10 @@ class Rational {
     }
 
     bool is_negative() const { return numerator_ < 0; }
+    bool is_zero() const { return numerator_ == 0; }
+    bool within_input_bounds() const {
+        return magnitude(numerator_) <= 1000 && denominator_ <= 1000;
+    }
 
     friend bool operator==(const Rational& left, const Rational& right) {
         return left.numerator_ == right.numerator_ &&
@@ -196,11 +210,135 @@ void solve_constant_acceleration(
     std::cout << '\n';
 }
 
+void solve_linear_system(int argc, char* argv[]) {
+    if (argc < 5) {
+        throw std::invalid_argument("linear-system request is missing its dimension");
+    }
+    const std::int64_t dimension = parse_integer(argv[3]);
+    if (dimension < 1 || dimension > 3) {
+        throw std::invalid_argument("native linear-system dimension must be 1 through 3");
+    }
+    const int size = static_cast<int>(dimension);
+    const int expected_argc = 4 + size * size + size;
+    if (argc != expected_argc) {
+        throw std::invalid_argument("linear-system argument count does not match dimension");
+    }
+
+    std::vector<std::vector<Rational>> matrix(
+        size, std::vector<Rational>(size, Rational(0, 1)));
+    std::vector<std::vector<Rational>> augmented(
+        size, std::vector<Rational>(size + 1, Rational(0, 1)));
+    int argument = 4;
+    for (int row = 0; row < size; ++row) {
+        for (int column = 0; column < size; ++column) {
+            matrix[row][column] = parse_rational(argv[argument++]);
+            if (!matrix[row][column].within_input_bounds()) {
+                throw std::invalid_argument(
+                    "linear-system input numerator and denominator must be within +/-1000"
+                );
+            }
+            augmented[row][column] = matrix[row][column];
+        }
+    }
+    std::vector<Rational> right_hand_side(size, Rational(0, 1));
+    for (int row = 0; row < size; ++row) {
+        right_hand_side[row] = parse_rational(argv[argument++]);
+        if (!right_hand_side[row].within_input_bounds()) {
+            throw std::invalid_argument(
+                "linear-system input numerator and denominator must be within +/-1000"
+            );
+        }
+        augmented[row][size] = right_hand_side[row];
+    }
+
+    Rational determinant(1, 1);
+    int row_swaps = 0;
+    for (int column = 0; column < size; ++column) {
+        int pivot_row = column;
+        while (pivot_row < size && augmented[pivot_row][column].is_zero()) {
+            ++pivot_row;
+        }
+        if (pivot_row == size) {
+            throw std::invalid_argument(
+                "coefficient matrix is singular; no unique solution exists"
+            );
+        }
+        if (pivot_row != column) {
+            std::swap(augmented[pivot_row], augmented[column]);
+            ++row_swaps;
+        }
+        const Rational pivot = augmented[column][column];
+        determinant = determinant * pivot;
+        for (int row = column + 1; row < size; ++row) {
+            const Rational factor = augmented[row][column] / pivot;
+            for (int entry = column + 1; entry <= size; ++entry) {
+                augmented[row][entry] =
+                    augmented[row][entry] -
+                    factor * augmented[column][entry];
+            }
+            augmented[row][column] = Rational(0, 1);
+        }
+    }
+    if (row_swaps % 2 != 0) {
+        determinant = Rational(-1, 1) * determinant;
+    }
+
+    std::vector<Rational> solution(size, Rational(0, 1));
+    for (int row = size - 1; row >= 0; --row) {
+        Rational value = augmented[row][size];
+        for (int column = row + 1; column < size; ++column) {
+            value = value - augmented[row][column] * solution[column];
+        }
+        solution[row] = value / augmented[row][row];
+    }
+
+    std::vector<Rational> residuals(size, Rational(0, 1));
+    for (int row = 0; row < size; ++row) {
+        Rational value = Rational(0, 1) - right_hand_side[row];
+        for (int column = 0; column < size; ++column) {
+            value = value + matrix[row][column] * solution[column];
+        }
+        residuals[row] = value;
+    }
+    const bool residual_check = std::all_of(
+        residuals.begin(),
+        residuals.end(),
+        [](const Rational& value) { return value.is_zero(); });
+
+    std::cout << "{\"protocol\":\"saemphysics.capability.v1\","
+              << "\"capability\":\"solve_linear_system\","
+              << "\"status\":\"completed\",\"result\":{\"solution\":[";
+    for (int index = 0; index < size; ++index) {
+        if (index != 0) {
+            std::cout << ',';
+        }
+        std::cout << '"' << solution[index].str() << '"';
+    }
+    std::cout << "],\"determinant\":\"" << determinant.str()
+              << "\",\"residuals\":[";
+    for (int index = 0; index < size; ++index) {
+        if (index != 0) {
+            std::cout << ',';
+        }
+        std::cout << '"' << residuals[index].str() << '"';
+    }
+    std::cout << "]},\"checks\":[{\"name\":\"linear_system_residual\","
+              << "\"passed\":" << (residual_check ? "true" : "false")
+              << ",\"details\":\"A*x - b = (";
+    for (int index = 0; index < size; ++index) {
+        if (index != 0) {
+            std::cout << ", ";
+        }
+        std::cout << residuals[index].str();
+    }
+    std::cout << ")\"}]}\n";
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
     const bool core_protocol =
-        argc == 6 && std::string_view(argv[1]) == "--core-v1";
+        argc >= 2 && std::string_view(argv[1]) == "--core-v1";
     if (!core_protocol && argc != 4) {
         std::cerr
             << "usage: saemphysics-kinematics INITIAL_VELOCITY ACCELERATION TIME\n"
@@ -208,18 +346,26 @@ int main(int argc, char* argv[]) {
                "INITIAL_VELOCITY ACCELERATION TIME\n";
         return 2;
     }
-    const int offset = core_protocol ? 3 : 1;
-    if (core_protocol &&
-        std::string_view(argv[2]) != "solve_constant_acceleration") {
-        std::cerr << "unsupported capability in core protocol v1\n";
-        return 2;
-    }
     try {
-        solve_constant_acceleration(
-            argv[offset],
-            argv[offset + 1],
-            argv[offset + 2],
-            core_protocol);
+        if (core_protocol) {
+            if (argc < 3) {
+                throw std::invalid_argument(
+                    "core protocol v1 requires a capability name"
+                );
+            }
+            const std::string_view capability(argv[2]);
+            if (capability == "solve_constant_acceleration" && argc == 6) {
+                solve_constant_acceleration(argv[3], argv[4], argv[5], true);
+            } else if (capability == "solve_linear_system") {
+                solve_linear_system(argc, argv);
+            } else {
+                throw std::invalid_argument(
+                    "unsupported capability or invalid argument count in core protocol v1"
+                );
+            }
+        } else {
+            solve_constant_acceleration(argv[1], argv[2], argv[3], false);
+        }
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "saemphysics-kinematics: " << error.what() << '\n';
