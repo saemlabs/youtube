@@ -1,0 +1,196 @@
+{
+  "contract": "saemphysics.student-request-response",
+  "schema_version": "1.0.0",
+  "valid_vectors": [
+    {
+      "id": "exact-derivative",
+      "request": {
+        "intent": "solve",
+        "calculation": {
+          "operation": "differentiate",
+          "question_id": "contract-derivative",
+          "expression": "x**3"
+        }
+      },
+      "expected": {
+        "status": "completed",
+        "artifact": {
+          "question_id": "contract-derivative",
+          "result": {
+            "expression": "x**3",
+            "variable": "x",
+            "derivative": "3*x**2",
+            "checks": [
+              {
+                "name": "symbolic_derivative",
+                "passed": true,
+                "details": "Derivative residual: 0"
+              }
+            ]
+          }
+        },
+        "verification_status": "passed",
+        "trace_layers": [
+          "semantic_ir",
+          "execution_ir",
+          "machine_ir",
+          "runtime",
+          "verification"
+        ]
+      }
+    },
+    {
+      "id": "exact-constant-acceleration",
+      "request": {
+        "intent": "solve",
+        "calculation": {
+          "operation": "solve_constant_acceleration",
+          "question_id": "contract-motion",
+          "initial_velocity_m_s": "3",
+          "acceleration_m_s2": "2",
+          "time_s": "4"
+        }
+      },
+      "expected": {
+        "status": "completed",
+        "artifact": {
+          "question_id": "contract-motion",
+          "result": {
+            "initial_velocity_m_s": "3",
+            "acceleration_m_s2": "2",
+            "time_s": "4",
+            "displacement_m": "28",
+            "final_velocity_m_s": "11"
+          }
+        },
+        "verification_status": "passed",
+        "trace_layers": [
+          "semantic_ir",
+          "execution_ir",
+          "machine_ir",
+          "runtime",
+          "verification"
+        ]
+      }
+    },
+    {
+      "id": "exact-definite-integral",
+      "request": {
+        "intent": "solve",
+        "calculation": {
+          "operation": "definite_integral",
+          "question_id": "contract-integral",
+          "expression": "x**2",
+          "lower_bound": "0",
+          "upper_bound": "3"
+        }
+      },
+      "expected": {
+        "status": "completed",
+        "artifact": {
+          "question_id": "contract-integral",
+          "result": {
+            "expression": "x**2",
+            "variable": "x",
+            "lower_bound": "0",
+            "upper_bound": "3",
+            "value": "9",
+            "checks": [
+              {
+                "name": "antiderivative",
+                "passed": true,
+                "details": "Derivative residual: 0"
+              },
+              {
+                "name": "fundamental_theorem",
+                "passed": true,
+                "details": "Endpoint-evaluation residual: 0"
+              },
+              {
+                "name": "definite_integral",
+                "passed": true,
+                "details": "Integral residual: 0"
+              }
+            ]
+          }
+        },
+        "verification_status": "passed",
+        "trace_layers": [
+          "semantic_ir",
+          "execution_ir",
+          "machine_ir",
+          "runtime",
+          "verification"
+        ]
+      }
+    },
+    {
+      "id": "exact-linear-system",
+      "request": {
+        "intent": "solve",
+        "calculation": {
+          "operation": "solve_linear_system",
+          "question_id": "contract-linear",
+          "coefficients": [
+            ["2", "1"],
+            ["1", "-1"]
+          ],
+          "right_hand_side": ["5", "1"]
+        }
+      },
+      "expected": {
+        "status": "completed",
+        "artifact": {
+          "question_id": "contract-linear",
+          "result": {
+            "solution": ["2", "1"],
+            "determinant": "-3",
+            "residuals": ["0", "0"],
+            "checks": [
+              {
+                "name": "linear_system_residual",
+                "passed": true,
+                "details": "A*x - b = (0, 0)"
+              }
+            ]
+          }
+        },
+        "verification_status": "passed",
+        "trace_layers": [
+          "semantic_ir",
+          "execution_ir",
+          "machine_ir",
+          "runtime",
+          "verification"
+        ]
+      }
+    }
+  ],
+  "invalid_vectors": [
+    {
+      "id": "reject-negative-time",
+      "request": {
+        "intent": "solve",
+        "calculation": {
+          "operation": "solve_constant_acceleration",
+          "question_id": "contract-invalid",
+          "initial_velocity_m_s": "3",
+          "acceleration_m_s2": "2",
+          "time_s": "-4"
+        }
+      }
+    },
+    {
+      "id": "reject-unrecognized-request-field",
+      "request": {
+        "intent": "solve",
+        "calculation": {
+          "operation": "differentiate",
+          "question_id": "contract-invalid",
+          "expression": "x**2"
+        },
+        "execute_arbitrary_code": true
+      }
+    }
+  ]
+}

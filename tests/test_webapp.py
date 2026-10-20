@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from threading import Thread
 from urllib.error import HTTPError
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 import pytest
@@ -41,6 +42,20 @@ def post_json(base_url, payload):
         return error.code, json.loads(error.read())
 
 
+def post_form(base_url, fields):
+    request = Request(
+        f"{base_url}/student",
+        data=urlencode(fields).encode("utf-8"),
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=3) as response:
+            return response.status, response.read().decode("utf-8")
+    except HTTPError as error:
+        return error.code, error.read().decode("utf-8")
+
+
 def test_server_serves_static_workbench_with_security_headers(workbench_server):
     with urlopen(workbench_server, timeout=3) as response:
         html = response.read().decode("utf-8")
@@ -49,6 +64,57 @@ def test_server_serves_static_workbench_with_security_headers(workbench_server):
     assert "SaemPhysics Workbench" in html
     assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert "default-src 'self'" in response.headers["Content-Security-Policy"]
+
+
+def test_python_student_frontend_shows_teacher_profile_and_safe_question_picker(
+    workbench_server,
+):
+    with urlopen(f"{workbench_server}/student", timeout=3) as response:
+        page = response.read().decode("utf-8")
+
+    assert response.status == 200
+    assert "Python-rendered interface" in page
+    assert 'href="https://www.youtube.com/@SaemPhysics"' in page
+    assert "synthetic-constant-acceleration-001" in page
+    assert "official_answer" not in page
+    assert response.headers["Content-Security-Policy"].startswith("default-src 'self'")
+
+
+def test_python_student_frontend_uses_central_practice_and_grading_flow(workbench_server):
+    question_id = "synthetic-constant-acceleration-001"
+    status, page = post_form(
+        workbench_server,
+        {"action": "practice", "question_id": question_id},
+    )
+
+    assert status == 200
+    assert "name=\"selected_option\"" in page
+    assert "The answer key is withheld until submission." in page
+    assert "correct_option" not in page
+
+    status, page = post_form(
+        workbench_server,
+        {
+            "action": "submit_answer",
+            "question_id": question_id,
+            "selected_option": "B",
+        },
+    )
+
+    assert status == 200
+    assert "Correct." in page
+    assert "Answer after submission: <strong>B</strong>" in page
+    assert "verified explanation is not" in page
+
+
+def test_python_student_frontend_rejects_unknown_corpus_ids(workbench_server):
+    status, page = post_form(
+        workbench_server,
+        {"action": "practice", "question_id": "not-in-corpus"},
+    )
+
+    assert status == 400
+    assert "not found in the validated corpus" in page
 
 
 def test_frontend_assets_are_served_from_fixed_routes(workbench_server):
@@ -155,8 +221,11 @@ def test_api_rejects_unsupported_routes_content_types_and_large_bodies(workbench
 
     oversized = Request(
         f"{workbench_server}/api/interact",
-        data=b" " * (1_048_577),
-        headers={"Content-Type": "application/json"},
+        data=b"{}",
+        headers={
+            "Content-Type": "application/json",
+            "Content-Length": str(1_048_577),
+        },
         method="POST",
     )
     with pytest.raises(HTTPError) as size_error:

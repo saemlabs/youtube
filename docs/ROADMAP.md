@@ -43,6 +43,10 @@ strict, provenance-aware format for a question before collecting a real corpus.
    processor. **Done:** run `saemphysics web`; question/test workflows and
    exact math results are rendered with checks/traces and a motion plot. It is
    loopback-only and not a public production service.
+   A focused Python-rendered `/student` page now links the SaemPhysics channel
+   and routes practice and grading through that same processor. The
+   language-neutral contract remains the integration boundary; C/C++ and
+   C#/.NET engine modules are future capabilities, not separate processors.
 5. Validate canonical question JSON and add clearly synthetic starter records.
    Five original constant-acceleration examples now pass the corpus and solver
    checks; they remain unsolved/unreviewed in the question bank.

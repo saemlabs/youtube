@@ -16,6 +16,11 @@ local-only HTTP adapter:
 saemphysics web
 ```
 
+Open `/student` on the same local server for a small Python-rendered
+student/teacher page. It links to the SaemPhysics YouTube profile and uses
+`process_student_request` for both question practice and answer grading; it
+does not contain a separate solver or grading implementation.
+
 It serves the UI and JSON endpoints from one origin, reads questions from the
 source-validated corpus, and renders result/check/trace data. The visualization
 is a browser-side plot of the solver's exact constant-acceleration inputs; the
@@ -191,6 +196,9 @@ new intents only when their typed inputs, outputs, safety/rights constraints,
 and tests exist. The roadmap stages ingestion, concept mapping, lesson review,
 rendering, and learner-facing persistence separately; a future web/API layer
 can call this same central function instead of duplicating business rules.
+
+The planned C/C++/C#/.NET engine boundaries and current implementation status
+are documented in [`ENGINE_ARCHITECTURE.md`](./ENGINE_ARCHITECTURE.md).
 
 ## Design references
 

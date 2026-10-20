@@ -3,12 +3,14 @@ import ipaddress
 import json
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs
 
 from pydantic import ValidationError
 
 from saemphysics.central import StudentRequest, process_student_request
 from saemphysics.models import QuestionRecord
 from saemphysics.sources import SourceManifest, load_question_corpus
+from saemphysics.student_frontend import render_student_page
 
 
 _MAX_REQUEST_BYTES = 1_048_576
@@ -16,6 +18,7 @@ _ASSETS = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/assets/app.css": ("app.css", "text/css; charset=utf-8"),
     "/assets/app.js": ("app.js", "text/javascript; charset=utf-8"),
+    "/assets/student.css": ("student.css", "text/css; charset=utf-8"),
 }
 
 
@@ -74,6 +77,16 @@ def create_server(
             self.end_headers()
             self.wfile.write(body)
 
+        def _send_html(self, status: int, content: str) -> None:
+            body = content.encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self._security_headers()
+            self.end_headers()
+            self.wfile.write(body)
+
         def _security_headers(self) -> None:
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("X-Frame-Options", "DENY")
@@ -86,6 +99,9 @@ def create_server(
             )
 
         def do_GET(self) -> None:
+            if self.path == "/student":
+                self._send_html(200, render_student_page(questions))
+                return
             if self.path == "/api/health":
                 self._send_json(200, {"status": "ok", "question_count": len(questions)})
                 return
@@ -133,6 +149,9 @@ def create_server(
             self.wfile.write(body)
 
         def do_POST(self) -> None:
+            if self.path == "/student":
+                self._handle_student_form()
+                return
             if self.path != "/api/interact":
                 self._send_json(404, {"error": "Not found"})
                 return
@@ -172,6 +191,109 @@ def create_server(
                 self._send_json(400, {"error": str(error)})
                 return
             self._send_json(200, response.model_dump(mode="json"))
+
+        def _handle_student_form(self) -> None:
+            if self.headers.get_content_type() != "application/x-www-form-urlencoded":
+                self._send_html(
+                    415,
+                    render_student_page(
+                        questions, error="Form submissions must be URL encoded."
+                    ),
+                )
+                return
+            try:
+                content_length = int(self.headers.get("Content-Length", ""))
+            except ValueError:
+                self._send_html(
+                    411,
+                    render_student_page(
+                        questions, error="A valid Content-Length is required."
+                    ),
+                )
+                return
+            if content_length < 0:
+                self._send_html(
+                    400,
+                    render_student_page(
+                        questions, error="Content-Length cannot be negative."
+                    ),
+                )
+                return
+            if content_length > _MAX_REQUEST_BYTES:
+                self._send_html(
+                    413,
+                    render_student_page(
+                        questions, error="The form exceeds the 1 MiB request limit."
+                    ),
+                )
+                return
+
+            selected_question = None
+            try:
+                form = parse_qs(
+                    self.rfile.read(content_length).decode("utf-8"),
+                    keep_blank_values=True,
+                    strict_parsing=True,
+                )
+
+                def field(name: str) -> str:
+                    values = form.get(name, [])
+                    if len(values) != 1 or not values[0]:
+                        raise ValueError(f"Form field {name!r} must be submitted once.")
+                    return values[0]
+
+                action = field("action")
+                question_id = field("question_id")
+                expected_fields = {"action", "question_id"}
+                if action == "submit_answer":
+                    expected_fields.add("selected_option")
+                if set(form) != expected_fields:
+                    raise ValueError("The form contains unsupported fields.")
+                selected_question = question_by_id.get(question_id)
+                if selected_question is None:
+                    raise ValueError(
+                        f"Question {question_id!r} was not found in the validated corpus."
+                    )
+                if action == "practice":
+                    request = StudentRequest(
+                        intent="practice",
+                        question_id=question_id,
+                    )
+                elif action == "submit_answer":
+                    request = StudentRequest(
+                        intent="submit_answer",
+                        question_id=question_id,
+                        selected_option=field("selected_option"),
+                    )
+                else:
+                    raise ValueError("Unsupported student form action.")
+
+                response = process_student_request(
+                    request,
+                    question_resolver=lambda requested_id: question_by_id[requested_id],
+                )
+            except (
+                UnicodeDecodeError,
+                ValueError,
+                ValidationError,
+            ) as error:
+                self._send_html(
+                    400,
+                    render_student_page(
+                        questions,
+                        selected_question=selected_question,
+                        error=str(error),
+                    ),
+                )
+                return
+            self._send_html(
+                200,
+                render_student_page(
+                    questions,
+                    selected_question=selected_question,
+                    response=response,
+                ),
+            )
 
         def do_DELETE(self) -> None:
             self._method_not_allowed()

@@ -5,7 +5,7 @@
 - `src/saemphysics/`: typed models, exact solvers, compiler/runtime, and lesson pipeline.
 - `tests/`: mathematical, execution, and pipeline checks.
 - `examples/`: runnable examples and JSON requests.
-- `web/`: local browser workbench for question practice and verified calculations.
+- `web/`: local browser workbench and styles for the Python-rendered student page.
 - `docs/`: uploaded reference material grouped by topic; see the [document index](./docs/README.md).
 - [Phased build roadmap](./docs/ROADMAP.md): monthly milestones and the current first task.
 - `prototypes/`: standalone browser prototypes that are not yet connected to the Python pipeline.
@@ -30,6 +30,10 @@ The unified student request interface is documented in
 explanation, and lesson-draft intents through the capabilities currently
 implemented, while clearly marking unsupported work.
 
+The versioned JSON conformance vectors for future shared-engine
+implementations are in [`contracts/v1/`](./contracts/v1/README.md); Python
+executes them against the central processor as part of the test suite.
+
 List questions available for practice with `saemphysics list-questions`, then
 select one by ID using
 `saemphysics interact examples/requests/student_practice.json`.
@@ -44,6 +48,12 @@ The workbench supports corpus practice and tests, exact supported math
 operations, verification details, execution traces, and a motion graph.
 It binds to loopback only and has no login or durable student accounts; do not
 expose it publicly.
+
+Open `/student` on the same local server for the focused Python-rendered
+student/teacher page. It links to the SaemPhysics YouTube channel and routes
+practice and answer submission through the same central processor. The
+planned C/C++/C#/.NET language boundaries are documented in the
+[unified engine direction](./docs/ENGINE_ARCHITECTURE.md).
 
 ## Working foundation
 
