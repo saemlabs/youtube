@@ -30,6 +30,19 @@ textbooks or from a real examination. Validate their provenance links with:
 saemphysics validate-corpus data/questions
 ```
 
+## Core processor knowledge matrix
+
+[`CORE_PROCESSOR_BOOK_MATRIX.csv`](./CORE_PROCESSOR_BOOK_MATRIX.csv) maps all
+29 uploaded reference documents to their visible chapters or sections, topics,
+concepts, mathematical/computational capabilities, and possible processor
+applications. Its chapter coverage is deliberately evidence-labeled:
+`outline_verified` means chapter structure was extractable; partial, summary,
+and unreadable uploads are identified rather than filled with invented
+headings. The processor mappings are engineering hypotheses to test, not claims
+that a source itself prescribes C, C++, or C# architecture. Rights remain
+`review_required`; the matrix is a concise study index, not a replacement for
+the books or permission to redistribute their contents.
+
 ## Vision and project design
 
 - [`New Architecture - cos ai.PDF`](./vision/New%20Architecture%20-%20cos%20ai.PDF) — architecture proposal.
