@@ -14,6 +14,7 @@ from saemphysics.sources import (
     load_question_corpus,
     validate_source_files,
 )
+from saemphysics.webapp import serve
 
 
 def _read_json_object(path: str) -> dict[str, object]:
@@ -128,7 +129,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=".",
         help="project root used to validate selected questions",
     )
+    web_parser = commands.add_parser(
+        "web",
+        help="start the local browser-based SaemPhysics workbench",
+    )
+    web_parser.add_argument("--host", default="127.0.0.1")
+    web_parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args(argv)
+
+    if args.command == "web":
+        serve(args.host, args.port)
+        return 0
 
     try:
         if args.command == "run":

@@ -9,6 +9,20 @@ saemphysics interact examples/requests/student_solve.json
 saemphysics interact -
 ```
 
+The interactive browser workbench uses the same central router through a
+local-only HTTP adapter:
+
+```bash
+saemphysics web
+```
+
+It serves the UI and JSON endpoints from one origin, reads questions from the
+source-validated corpus, and renders result/check/trace data. The visualization
+is a browser-side plot of the solver's exact constant-acceleration inputs; the
+solver's exact result and verification report remain authoritative. The
+workbench is a development tool bound to loopback, with no authentication,
+durable accounts, or public deployment configuration.
+
 The interface is deliberately a small router over registered capabilities.
 It is not a general AI agent, does not run arbitrary submitted code, and does
 not claim that unavailable capabilities have been completed.
@@ -160,6 +174,15 @@ Responses contain:
 - `verification`: explicit checks when computation or a stored solution supports it.
 - `trace`: runtime layers for computation requests.
 - `next_action`: a concrete review or follow-up step when needed.
+
+The local HTTP adapter exposes:
+
+- `GET /api/health`: readiness and corpus size.
+- `GET /api/questions`: question metadata/options without answer keys.
+- `POST /api/interact`: a validated student request and response envelope.
+
+Request bodies are limited to 1 MiB. Unknown paths, malformed input, unsupported
+content types, and invalid corpus IDs return explicit errors.
 
 ## Growth path
 

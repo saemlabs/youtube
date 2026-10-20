@@ -5,6 +5,7 @@
 - `src/saemphysics/`: typed models, exact solvers, compiler/runtime, and lesson pipeline.
 - `tests/`: mathematical, execution, and pipeline checks.
 - `examples/`: runnable examples and JSON requests.
+- `web/`: local browser workbench for question practice and verified calculations.
 - `docs/`: uploaded reference material grouped by topic; see the [document index](./docs/README.md).
 - [Phased build roadmap](./docs/ROADMAP.md): monthly milestones and the current first task.
 - `prototypes/`: standalone browser prototypes that are not yet connected to the Python pipeline.
@@ -13,6 +14,7 @@ Run a structured request through the verified Python backend:
 
 ```bash
 python -m pip install -e .
+saemphysics web
 saemphysics run examples/requests/constant_acceleration.json
 saemphysics validate-sources data/sources.json
 saemphysics validate-corpus data/questions
@@ -35,6 +37,13 @@ For a stateless multi-question test, run
 `saemphysics interact examples/requests/student_start_test.json`; submit
 answers with the matching IDs using
 `saemphysics interact examples/requests/student_submit_test.json`.
+
+Start the interactive local frontend and Python backend together with
+`saemphysics web`, then open the printed localhost URL (port 8000 by default).
+The workbench supports corpus practice and tests, exact supported math
+operations, verification details, execution traces, and a motion graph.
+It binds to loopback only and has no login or durable student accounts; do not
+expose it publicly.
 
 ## Working foundation
 

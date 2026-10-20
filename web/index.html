@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10141b">
+    <title>SaemPhysics Workbench</title>
+    <link rel="stylesheet" href="/assets/app.css">
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="SaemPhysics Workbench home">
+          <span class="brand-mark" aria-hidden="true">S</span>
+          <span><strong>SaemPhysics</strong><small>learning workbench</small></span>
+        </a>
+        <div class="workspace-label">WORKSPACE</div>
+        <nav class="primary-nav" aria-label="Workbench">
+          <button class="nav-link active" type="button" data-view="learn">
+            <span aria-hidden="true">◉</span> Learn & practice
+          </button>
+          <button class="nav-link" type="button" data-view="solve">
+            <span aria-hidden="true">⌘</span> Math workbench
+          </button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="status-line"><span class="status-dot"></span><span id="connection-status">Connecting…</span></div>
+          <p>Local prototype · verified Python engine</p>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">SAEMPHYSICS / WORKSPACE</p>
+            <h1 id="page-title">Learn & practice</h1>
+          </div>
+          <div class="topbar-right"><span class="local-badge">LOCAL SESSION</span></div>
+        </header>
+
+        <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+        <section id="learn-view" class="view-panel">
+          <div class="welcome-row">
+            <div>
+              <p class="eyebrow accent-text">YOUR STUDY SPACE</p>
+              <h2>Build understanding, one problem at a time.</h2>
+              <p class="muted">Choose a question to practice, or start a short test. Answers stay hidden until you submit.</p>
+            </div>
+            <div class="welcome-icon" aria-hidden="true"><span>∫</span><span>∑</span><span>→</span></div>
+          </div>
+
+          <div class="content-grid">
+            <section class="panel question-panel" aria-labelledby="question-heading">
+              <div class="panel-heading">
+                <div><p class="eyebrow">QUESTION LIBRARY</p><h3 id="question-heading">Synthetic mechanics</h3></div>
+                <span id="question-count" class="count-badge">—</span>
+              </div>
+              <label class="sr-only" for="question-select">Choose a question</label>
+              <select id="question-select"></select>
+              <div id="question-preview" class="question-preview">
+                <p class="muted">Loading questions…</p>
+              </div>
+              <div class="button-row">
+                <button id="practice-button" class="button button-primary" type="button">Practice this question</button>
+                <button id="refresh-button" class="button button-quiet" type="button" aria-label="Reload question list">↻</button>
+              </div>
+            </section>
+
+            <section class="panel test-panel" aria-labelledby="test-heading">
+              <div class="panel-heading">
+                <div><p class="eyebrow">QUICK ASSESSMENT</p><h3 id="test-heading">Mechanics check-in</h3></div>
+                <span class="test-icon" aria-hidden="true">✓</span>
+              </div>
+              <p class="muted">Take a short test using the five original constant-acceleration questions. Your score appears after submission.</p>
+              <div class="test-meta"><span>5 questions</span><span>·</span><span>Multiple choice</span><span>·</span><span>Not timed</span></div>
+              <button id="start-test-button" class="button button-secondary" type="button">Start the test <span aria-hidden="true">→</span></button>
+            </section>
+          </div>
+
+          <section id="interaction-result" class="panel result-panel" aria-live="polite" hidden></section>
+        </section>
+
+        <section id="solve-view" class="view-panel" hidden>
+          <div class="welcome-row compact">
+            <div>
+              <p class="eyebrow accent-text">EXACT MATH ENGINE</p>
+              <h2>Explore a calculation.</h2>
+              <p class="muted">Requests pass through the compiler, Python backend, and configured verification checks.</p>
+            </div>
+            <div class="engine-pill"><span class="status-dot"></span> Python symbolic backend</div>
+          </div>
+          <div class="content-grid solve-grid">
+            <section class="panel solver-panel">
+              <div class="panel-heading"><div><p class="eyebrow">INPUT</p><h3>Choose an operation</h3></div></div>
+              <label class="field-label" for="operation-select">Operation</label>
+              <select id="operation-select">
+                <option value="solve_constant_acceleration">Constant acceleration</option>
+                <option value="differentiate">Differentiate an expression</option>
+                <option value="definite_integral">Definite integral</option>
+                <option value="solve_linear_system">Exact linear system</option>
+              </select>
+              <div id="operation-fields"></div>
+              <button id="solve-button" class="button button-primary full-button" type="button">Run & verify <span aria-hidden="true">→</span></button>
+              <p class="fine-print">Exact input only. Unsupported input is rejected rather than approximated silently.</p>
+            </section>
+            <section id="solve-result" class="panel solve-result-panel" aria-live="polite">
+              <div class="empty-state"><div class="empty-symbol" aria-hidden="true">ƒ(x)</div><h3>Results appear here</h3><p class="muted">Run a calculation to see its exact result, checks, and execution trace.</p></div>
+            </section>
+          </div>
+        </section>
+
+        <footer class="page-footer">
+          <span>SaemPhysics prototype</span><span>Computation is checked; teaching and publication still require human review.</span>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

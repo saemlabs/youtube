@@ -181,6 +181,16 @@ def test_cli_rejects_unknown_corpus_question_id(tmp_path, capsys):
     assert "not found in the validated corpus" in captured.err
 
 
+def test_web_command_starts_local_interface_with_requested_address(monkeypatch):
+    from saemphysics import cli
+
+    calls = []
+    monkeypatch.setattr(cli, "serve", lambda host, port: calls.append((host, port)))
+
+    assert cli.main(["web", "--host", "localhost", "--port", "8123"]) == 0
+    assert calls == [("localhost", 8123)]
+
+
 def test_cli_runs_a_test_and_grades_submitted_answers(tmp_path, capsys):
     start_path = tmp_path / "start-test.json"
     start_path.write_text(

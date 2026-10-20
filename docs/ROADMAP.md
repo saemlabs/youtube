@@ -39,10 +39,14 @@ strict, provenance-aware format for a question before collecting a real corpus.
    keyed multiple-choice records; durable attempts and learner progress remain
    future work. Test responses include worked solutions only when both the
    derivation checks pass and a named human reviewer has approved the question.
-4. Validate canonical question JSON and add clearly synthetic starter records.
+4. Add a local browser frontend and HTTP adapter over the same central
+   processor. **Done:** run `saemphysics web`; question/test workflows and
+   exact math results are rendered with checks/traces and a motion plot. It is
+   loopback-only and not a public production service.
+5. Validate canonical question JSON and add clearly synthetic starter records.
    Five original constant-acceleration examples now pass the corpus and solver
    checks; they remain unsolved/unreviewed in the question bank.
-5. Keep source rights and human review explicit. **Exit check:** a malformed
+6. Keep source rights and human review explicit. **Exit check:** a malformed
    record is rejected, and the starter example is unmistakably synthetic and
    remains unsolved/unreviewed.
 
