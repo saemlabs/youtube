@@ -11,6 +11,12 @@
 - [Phased build roadmap](./docs/ROADMAP.md): monthly milestones and the current first task.
 - [Three-vision build path](./docs/THREE_VISION_BUILD.md): how teacher content,
   the EdTech platform, and the cognitive/quantum direction share one engine.
+- [Project status and next steps](./docs/PROJECT_STATUS_AND_NEXT_STEPS.md):
+  what is implemented, what remains, and the recommended order of work.
+- [`site/`](./site/): responsive static GitHub Pages student preview; it does
+  not host the local Python learning engine.
+- [Open the student preview](https://saemlabs.github.io/youtube/): public,
+  static introduction that works in standard desktop and mobile browsers.
 - [Project principles](./docs/PROJECT_PRINCIPLES.md): unified-engine direction,
   cloud intent, and educational/religious source stewardship.
 - `prototypes/`: standalone browser prototypes that are not yet connected to the Python pipeline.
