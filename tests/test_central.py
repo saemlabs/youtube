@@ -15,7 +15,7 @@ from saemphysics.models import (
 )
 
 
-def make_question(*, verified=False, official_answer="B"):
+def make_question(*, verified=False, reviewed=False, official_answer="B"):
     solution = SolutionArtifact()
     if verified:
         solution = SolutionArtifact(
@@ -54,6 +54,10 @@ def make_question(*, verified=False, official_answer="B"):
         ],
         official_answer=official_answer,
         solution=solution,
+        review={
+            "human_verified": reviewed,
+            "reviewer": "reviewer-1" if reviewed else None,
+        },
     )
 
 
@@ -168,7 +172,7 @@ def test_start_test_withholds_answer_keys():
 
 
 def test_submit_test_returns_score_and_per_question_feedback():
-    question = make_question(verified=True)
+    question = make_question(verified=True, reviewed=True)
     response = process_student_request(
         StudentRequest(
             intent="submit_test",
@@ -188,8 +192,54 @@ def test_submit_test_returns_score_and_per_question_feedback():
             "selected_option": "B",
             "correct_option": "B",
             "correct": True,
+            "worked_solution": {
+                "assumptions": ["Acceleration is constant."],
+                "derivation_steps": [
+                    "Use s = ut + 1/2 at^2.",
+                    "Substitute the given values to obtain 28 m.",
+                ],
+                "symbolic_result": "s = ut + 1/2 at^2",
+                "numerical_result": "28",
+                "units": "m",
+                "verification_checks": [
+                    {
+                        "name": "displacement_equation",
+                        "passed": True,
+                        "details": "The equation residual is zero.",
+                    }
+                ],
+                "reviewer": "reviewer-1",
+            },
         }
     ]
+
+
+def test_test_results_withhold_unreviewed_or_unverified_solutions():
+    unreviewed = make_question(verified=True, reviewed=False)
+    unverified = make_question(verified=False, reviewed=True).model_copy(
+        update={"question_id": "unverified-question"}
+    )
+    questions = {
+        unreviewed.question_id: unreviewed,
+        unverified.question_id: unverified,
+    }
+
+    response = process_student_request(
+        StudentRequest(
+            intent="submit_test",
+            question_ids=list(questions),
+            answers={
+                unreviewed.question_id: "B",
+                unverified.question_id: "B",
+            },
+        ),
+        question_resolver=questions.__getitem__,
+    )
+
+    assert response.artifact["results"][0]["worked_solution"] is None
+    assert response.artifact["results"][1]["worked_solution"] is None
+    assert "named human review" in response.next_action
+    assert "unverified-question" in response.next_action
 
 
 def test_submit_test_blocks_if_any_answer_key_is_missing():
@@ -233,8 +283,8 @@ def test_test_score_percentage_preserves_partial_scores():
     assert response.artifact["percentage"] == 33.3
 
 
-def test_submission_grades_against_key_and_reveals_only_verified_work():
-    question = make_question(verified=True)
+def test_submission_reveals_worked_feedback_only_after_named_human_review():
+    question = make_question(verified=True, reviewed=True)
     response = process_student_request(
         StudentRequest(
             intent="submit_answer",
@@ -246,6 +296,22 @@ def test_submission_grades_against_key_and_reveals_only_verified_work():
     assert response.status == "correct"
     assert response.artifact["correct_option"] == "B"
     assert len(response.artifact["derivation_steps"]) == 2
+    assert response.artifact["solution_reviewer"] == "reviewer-1"
+
+
+def test_single_submission_withholds_unreviewed_derivation():
+    question = make_question(verified=True, reviewed=False)
+    response = process_student_request(
+        StudentRequest(
+            intent="submit_answer",
+            question=question,
+            selected_option="B",
+        )
+    )
+
+    assert response.status == "correct"
+    assert "derivation_steps" not in response.artifact
+    assert "named human reviewer" in response.next_action
 
 
 def test_submission_without_official_key_is_blocked_not_guessed():

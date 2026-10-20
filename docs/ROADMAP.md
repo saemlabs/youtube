@@ -37,7 +37,8 @@ strict, provenance-aware format for a question before collecting a real corpus.
    `saemphysics interact`.
    The stateless multi-question test start/submit loop is now implemented for
    keyed multiple-choice records; durable attempts and learner progress remain
-   future work.
+   future work. Test responses include worked solutions only when both the
+   derivation checks pass and a named human reviewer has approved the question.
 4. Validate canonical question JSON and add clearly synthetic starter records.
    Five original constant-acceleration examples now pass the corpus and solver
    checks; they remain unsolved/unreviewed in the question bank.

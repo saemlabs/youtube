@@ -133,6 +133,10 @@ def _question_is_verified(question: QuestionRecord) -> bool:
     )
 
 
+def _question_has_reviewed_solution(question: QuestionRecord) -> bool:
+    return _question_is_verified(question) and question.review.human_verified
+
+
 def process_student_request(
     request: StudentRequest,
     question_resolver: Callable[[str], QuestionRecord] | None = None,
@@ -198,8 +202,10 @@ def process_student_request(
                 "Cannot grade test; usable source-recorded answer keys are missing for: "
                 + ", ".join(unkeyed)
             )
-        results = [
-            {
+        results = []
+        feedback_pending: list[str] = []
+        for question in questions:
+            result: dict[str, object] = {
                 "question_id": question.question_id,
                 "selected_option": request.answers[question.question_id],
                 "correct_option": question.official_answer.strip().upper(),
@@ -208,21 +214,45 @@ def process_student_request(
                     == question.official_answer.strip().upper()
                 ),
             }
-            for question in questions
-        ]
+            if _question_has_reviewed_solution(question):
+                result["worked_solution"] = {
+                    "assumptions": question.solution.assumptions,
+                    "derivation_steps": question.solution.derivation_steps,
+                    "symbolic_result": question.solution.symbolic_result,
+                    "numerical_result": question.solution.numerical_result,
+                    "units": question.solution.units,
+                    "verification_checks": [
+                        check.model_dump(mode="json")
+                        for check in question.solution.verification_checks
+                    ],
+                    "reviewer": question.review.reviewer,
+                }
+            else:
+                result["worked_solution"] = None
+                feedback_pending.append(question.question_id)
+            results.append(result)
         correct_count = sum(result["correct"] for result in results)
         total = len(results)
         return StudentResponse(
             intent=request.intent,
             status="completed",
-            message=f"Test graded: {correct_count} of {total} answers correct.",
+            message=(
+                f"Test graded: {correct_count} of {total} answers correct. "
+                f"Worked solutions reviewed: {total - len(feedback_pending)} of {total}."
+            ),
             artifact={
                 "correct_count": correct_count,
                 "total": total,
                 "percentage": round(correct_count * 100 / total, 1),
                 "results": results,
             },
-            next_action="Review each result; verified worked solutions are not available for every item yet.",
+            next_action=(
+                "Worked-solution feedback is withheld for questions without both "
+                "passing verification and named human review: "
+                + ", ".join(feedback_pending)
+                if feedback_pending
+                else "Review the worked solutions and continue practicing."
+            ),
         )
 
     if request.intent == "solve":
@@ -302,12 +332,13 @@ def process_student_request(
             "correct_option": correct_key,
             "solution_status": solution.status.value,
         }
-        if _question_is_verified(question):
+        if _question_has_reviewed_solution(question):
             artifact["derivation_steps"] = solution.derivation_steps
             artifact["verification_checks"] = [
                 check.model_dump(mode="json")
                 for check in solution.verification_checks
             ]
+            artifact["solution_reviewer"] = question.review.reviewer
         return StudentResponse(
             intent=request.intent,
             status="correct" if is_correct else "incorrect",
@@ -315,9 +346,10 @@ def process_student_request(
             artifact=artifact,
             next_action=(
                 None
-                if _question_is_verified(question)
+                if _question_has_reviewed_solution(question)
                 else "The answer key is available, but a verified explanation is not. "
-                "Request solution review before presenting a worked explanation."
+                "A named human reviewer must approve the verified derivation before "
+                "worked feedback is shown."
             ),
         )
 

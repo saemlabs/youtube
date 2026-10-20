@@ -131,6 +131,13 @@ aggregate score and per-question feedback after submission. Attempts are
 stateless and not persisted. Synthetic pilot keys are authored for this
 project and solver-tested; they are not official exam answer keys.
 
+Worked-solution feedback is included only when a question has a verified
+solution (non-empty derivation and all checks passing) and its question review
+has a named human reviewer. Otherwise the score is still returned, the
+worked-solution field is `null`, and the response names the questions needing
+verification/review. A correct answer key by itself is not treated as proof
+of a derivation.
+
 ### Explain and make a lesson
 
 `explain` assembles stored assumptions, derivation, result, and passing checks

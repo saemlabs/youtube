@@ -229,3 +229,8 @@ def test_cli_runs_a_test_and_grades_submitted_answers(tmp_path, capsys):
     assert graded["artifact"]["correct_count"] == 2
     assert graded["artifact"]["total"] == 2
     assert graded["artifact"]["percentage"] == 100
+    assert all(
+        result["worked_solution"] is None
+        for result in graded["artifact"]["results"]
+    )
+    assert "named human review" in graded["next_action"]
