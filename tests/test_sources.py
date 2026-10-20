@@ -5,6 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from saemphysics.cli import main
+from saemphysics.concepts import ConceptGraph, load_concept_graph
 from saemphysics.ir import SemanticIR, compile_request
 from saemphysics.models import RightsStatus
 from saemphysics.runtime import execute_plan
@@ -174,6 +175,44 @@ def test_pilot_corpus_records_match_catalogued_original_source():
         and not question.review.human_verified
         for question in questions
     )
+
+
+def test_validated_project_corpus_links_to_known_concepts():
+    manifest = SourceManifest.model_validate_json(
+        Path("data/sources.json").read_text(encoding="utf-8")
+    )
+    graph = load_concept_graph("data/concepts.json")
+    questions = load_question_corpus(
+        "data/questions",
+        manifest,
+        concept_graph=graph,
+    )
+
+    known_concepts = {concept.concept_id for concept in graph.concepts}
+    assert all(set(question.concepts) <= known_concepts for question in questions)
+
+
+def test_corpus_loader_rejects_question_with_unknown_concept_reference():
+    manifest = SourceManifest.model_validate_json(
+        Path("data/sources.json").read_text(encoding="utf-8")
+    )
+    graph = ConceptGraph(
+        concepts=[
+            {
+                "concept_id": "constant_acceleration",
+                "title": "Constant acceleration",
+                "description": "Draft concept definition.",
+                "subject": "physics",
+            }
+        ]
+    )
+
+    with pytest.raises(ValueError, match="references unknown concepts"):
+        load_question_corpus(
+            "data/questions",
+            manifest,
+            concept_graph=graph,
+        )
 
 
 def test_each_synthetic_pilot_prompt_has_a_passing_exact_solver_case():

@@ -226,6 +226,27 @@ def test_question_endpoint_returns_safe_corpus_fields(workbench_server):
     assert first_question["question_id"] == "synthetic-constant-acceleration-001"
     assert "official_answer" not in first_question
     assert "correct_option" not in first_question
+    assert first_question["concepts"] == [
+        "constant_acceleration",
+        "displacement",
+        "final_velocity",
+    ]
+
+
+def test_concept_endpoint_exposes_reviewable_graph_without_marking_it_approved(
+    workbench_server,
+):
+    status, headers, payload = get_json(workbench_server, "/api/concepts")
+
+    assert status == 200
+    assert headers["Cache-Control"] == "no-store"
+    assert payload["schema_version"] == "1.0"
+    assert payload["concept_count"] == 3
+    assert all(not item["review"]["human_verified"] for item in payload["concepts"])
+    displacement = next(
+        item for item in payload["concepts"] if item["concept_id"] == "displacement"
+    )
+    assert displacement["prerequisites"] == ["constant_acceleration"]
 
 
 def test_api_handles_verified_math_and_rejects_unknown_question(workbench_server):

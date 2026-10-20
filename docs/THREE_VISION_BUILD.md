@@ -106,10 +106,12 @@ Every vertical slice should answer:
 ## Current next step
 
 The student/teacher shell, request processor, exact math path, lesson schema,
-and cross-language contract vectors are already present. The local `/teacher`
-studio now connects one original constant-acceleration problem to the verified
-lesson draft compiler and displays the scenes, checks, trace, and review/rights
-blockers. It remains stateless and does not render or publish video. The next
-step is a teacher review/export workflow for this same artifact, without
-introducing learner-data persistence or external content before rights and
-privacy requirements are settled.
+cross-language contract vectors, and a versioned three-concept graph are
+present. The local `/teacher` studio connects one original
+constant-acceleration problem to the verified lesson draft compiler and
+displays the scenes, checks, trace, and review/rights blockers. It remains
+stateless and does not render or publish video. The next step is a teacher
+review/export workflow for this same artifact, without introducing learner-data
+persistence or external content before rights and privacy requirements are
+settled. The concept graph is structural draft metadata until a qualified
+reviewer approves it.

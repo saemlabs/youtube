@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "concepts": [
+    {
+      "concept_id": "constant_acceleration",
+      "title": "Constant acceleration",
+      "description": "A motion model in which acceleration remains constant over the interval being studied.",
+      "subject": "physics",
+      "prerequisites": [],
+      "review": {
+        "human_verified": false,
+        "reviewer": null
+      }
+    },
+    {
+      "concept_id": "displacement",
+      "title": "Displacement under constant acceleration",
+      "description": "The change in position over a time interval, computed from the initial velocity and constant acceleration.",
+      "subject": "physics",
+      "prerequisites": [
+        "constant_acceleration"
+      ],
+      "review": {
+        "human_verified": false,
+        "reviewer": null
+      }
+    },
+    {
+      "concept_id": "final_velocity",
+      "title": "Final velocity under constant acceleration",
+      "description": "The velocity at the end of a time interval when the initial velocity and constant acceleration are known.",
+      "subject": "physics",
+      "prerequisites": [
+        "constant_acceleration"
+      ],
+      "review": {
+        "human_verified": false,
+        "reviewer": null
+      }
+    }
+  ]
+}

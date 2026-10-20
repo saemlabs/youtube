@@ -8,6 +8,7 @@ from urllib.parse import parse_qs
 from pydantic import ValidationError
 
 from saemphysics.central import StudentRequest, process_student_request
+from saemphysics.concepts import load_concept_graph
 from saemphysics.models import QuestionRecord
 from saemphysics.sources import SourceManifest, load_question_corpus
 from saemphysics.student_frontend import render_student_page
@@ -54,7 +55,13 @@ def create_server(
         (root / "data/sources.json").read_text(encoding="utf-8")
     )
     manifest = SourceManifest.model_validate(manifest_payload)
-    questions = load_question_corpus("data/questions", manifest, root)
+    concept_graph = load_concept_graph(root / "data/concepts.json")
+    questions = load_question_corpus(
+        "data/questions",
+        manifest,
+        root,
+        concept_graph,
+    )
     question_by_id = {question.question_id: question for question in questions}
     web_root = root / "web"
 
@@ -126,6 +133,7 @@ def create_server(
                                 "subject": question.subject,
                                 "topic": question.topic,
                                 "question_text": question.question_text,
+                                "concepts": question.concepts,
                                 "options": [
                                     option.model_dump(mode="json")
                                     for option in question.options
@@ -133,6 +141,22 @@ def create_server(
                             }
                             for question in sorted(
                                 questions, key=lambda item: item.question_id
+                            )
+                        ],
+                    },
+                )
+                return
+            if self.path == "/api/concepts":
+                self._send_json(
+                    200,
+                    {
+                        "schema_version": concept_graph.schema_version,
+                        "concept_count": len(concept_graph.concepts),
+                        "concepts": [
+                            concept.model_dump(mode="json")
+                            for concept in sorted(
+                                concept_graph.concepts,
+                                key=lambda item: item.concept_id,
                             )
                         ],
                     },

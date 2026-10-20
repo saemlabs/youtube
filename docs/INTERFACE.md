@@ -191,11 +191,20 @@ Responses contain:
 The local HTTP adapter exposes:
 
 - `GET /api/health`: readiness and corpus size.
-- `GET /api/questions`: question metadata/options without answer keys.
+- `GET /api/questions`: question metadata, concept IDs, and options without
+  answer keys.
+- `GET /api/concepts`: the versioned concept graph, prerequisites, and review
+  state.
 - `POST /api/interact`: a validated student request and response envelope.
 - `GET /student` and `POST /student`: focused corpus practice and answer
   submission.
 - `GET /teacher` and `POST /teacher`: local verified-example lesson drafting.
+
+The checked-in graph is `data/concepts.json`. Validate it with
+`saemphysics validate-concepts`; corpus validation, question listing,
+corpus-backed CLI interactions, and web startup also validate every question's
+concept IDs against the graph. The starter definitions are draft metadata, not
+human-reviewed curriculum.
 
 Request bodies are limited to 1 MiB. Unknown paths, malformed input, unsupported
 content types, and invalid corpus IDs return explicit errors.

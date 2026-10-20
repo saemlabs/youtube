@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import Field, HttpUrl, model_validator
 
+from saemphysics.concepts import ConceptGraph, validate_question_concepts
 from saemphysics.models import QuestionRecord, RightsStatus, StrictModel
 
 
@@ -112,6 +113,7 @@ def load_question_corpus(
     question_directory: str | Path,
     manifest: SourceManifest,
     project_root: str | Path = ".",
+    concept_graph: ConceptGraph | None = None,
 ) -> list[QuestionRecord]:
     """Load canonical questions and verify their source and rights references."""
     root = Path(project_root).resolve()
@@ -163,6 +165,8 @@ def load_question_corpus(
                 f"Question {question.question_id!r} references page "
                 f"{question.source.page} missing from source page mapping"
             )
+        if concept_graph is not None:
+            validate_question_concepts(question, concept_graph)
         records.append(question)
 
     if not records:

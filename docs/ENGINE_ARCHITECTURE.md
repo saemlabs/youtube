@@ -82,3 +82,9 @@ license, and access-date metadata. `review_required` remains the default; a
 record marked `licensed` must provide the license name, official URL, and
 rights-evidence note. The schema records evidence but cannot itself determine
 whether an interpretation of a license is legally correct.
+
+The versioned concept graph at [`data/concepts.json`](../data/concepts.json)
+is the first cognitive structure shared by questions and interfaces. Graph
+validation rejects duplicate IDs, unknown prerequisites, cycles, and question
+references to missing concepts. Its starter definitions are explicitly
+unreviewed; graph validity is structural correctness, not pedagogical approval.

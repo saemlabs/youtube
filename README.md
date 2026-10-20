@@ -38,6 +38,11 @@ The versioned JSON conformance vectors for future shared-engine
 implementations are in [`contracts/v1/`](./contracts/v1/README.md); Python
 executes them against the central processor as part of the test suite.
 
+The shared starter concept graph is [`data/concepts.json`](./data/concepts.json).
+Run `saemphysics validate-concepts` to check IDs, prerequisites, and cycles;
+`saemphysics validate-corpus data/questions` also checks each question's concept
+references. Definitions are drafts until reviewed.
+
 List questions available for practice with `saemphysics list-questions`, then
 select one by ID using
 `saemphysics interact examples/requests/student_practice.json`.

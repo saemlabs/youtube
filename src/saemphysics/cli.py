@@ -6,6 +6,7 @@ import sys
 from collections.abc import Sequence
 
 from saemphysics.central import StudentRequest, process_student_request
+from saemphysics.concepts import load_concept_graph
 from saemphysics.ir import SemanticIR, compile_request
 from saemphysics.models import QuestionRecord
 from saemphysics.runtime import execute_plan
@@ -71,7 +72,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     corpus_parser = commands.add_parser(
         "validate-corpus",
-        help="validate question records against their source manifest",
+        help="validate question records against sources and the concept graph",
     )
     corpus_parser.add_argument(
         "questions",
@@ -86,6 +87,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--root",
         default=".",
         help="project root used to resolve paths (default: current directory)",
+    )
+    corpus_parser.add_argument(
+        "--concepts",
+        default="data/concepts.json",
+        help="versioned concept graph (default: data/concepts.json)",
+    )
+    concept_parser = commands.add_parser(
+        "validate-concepts",
+        help="validate concept IDs, prerequisites, and acyclic graph structure",
+    )
+    concept_parser.add_argument(
+        "concepts",
+        nargs="?",
+        default="data/concepts.json",
+        help="concept graph JSON (default: data/concepts.json)",
     )
     interact_parser = commands.add_parser(
         "interact",
@@ -110,6 +126,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=".",
         help="project root used to validate selected questions",
     )
+    interact_parser.add_argument(
+        "--concepts",
+        default="data/concepts.json",
+        help="versioned concept graph (default: data/concepts.json)",
+    )
     list_parser = commands.add_parser(
         "list-questions",
         help="list selectable questions without exposing answer keys",
@@ -128,6 +149,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--root",
         default=".",
         help="project root used to validate selected questions",
+    )
+    list_parser.add_argument(
+        "--concepts",
+        default="data/concepts.json",
+        help="versioned concept graph (default: data/concepts.json)",
     )
     web_parser = commands.add_parser(
         "web",
@@ -180,14 +206,29 @@ def main(argv: Sequence[str] | None = None) -> int:
                     )
                 },
             }
+        elif args.command == "validate-concepts":
+            graph = load_concept_graph(args.concepts)
+            output = {
+                "valid": True,
+                "schema_version": graph.schema_version,
+                "concept_count": len(graph.concepts),
+                "reviewed_count": sum(
+                    concept.review.human_verified for concept in graph.concepts
+                ),
+                "concept_ids": sorted(
+                    concept.concept_id for concept in graph.concepts
+                ),
+            }
         elif args.command == "validate-corpus":
             manifest = SourceManifest.model_validate(
                 _read_json_object(args.manifest)
             )
+            graph = load_concept_graph(args.concepts)
             questions = load_question_corpus(
                 args.questions,
                 manifest,
                 args.root,
+                graph,
             )
             output = {
                 "valid": True,
@@ -208,10 +249,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 manifest = SourceManifest.model_validate(
                     _read_json_object(args.manifest)
                 )
+                graph = load_concept_graph(args.concepts)
                 questions = load_question_corpus(
                     args.questions,
                     manifest,
                     args.root,
+                    graph,
                 )
                 output = {
                     "question_count": len(questions),
@@ -239,10 +282,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                     manifest = SourceManifest.model_validate(
                         _read_json_object(args.manifest)
                     )
+                    graph = load_concept_graph(args.concepts)
                     questions = load_question_corpus(
                         args.questions,
                         manifest,
                         args.root,
+                        graph,
                     )
                     question_by_id = {
                         question.question_id: question for question in questions

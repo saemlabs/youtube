@@ -143,6 +143,24 @@ def test_cli_lists_corpus_questions_without_leaking_answer_keys(capsys):
     assert "official_answer" not in response["questions"][0]
 
 
+def test_cli_validates_versioned_concept_graph(capsys):
+    assert main(["validate-concepts"]) == 0
+
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    assert json.loads(captured.out) == {
+        "valid": True,
+        "schema_version": "1.0",
+        "concept_count": 3,
+        "reviewed_count": 0,
+        "concept_ids": [
+            "constant_acceleration",
+            "displacement",
+            "final_velocity",
+        ],
+    }
+
+
 def test_cli_interacts_with_question_id_from_validated_corpus(tmp_path, capsys):
     request_path = tmp_path / "practice-request.json"
     request_path.write_text(

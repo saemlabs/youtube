@@ -133,14 +133,22 @@ has explicit assumptions and checks.
 ## Month 6 — Concept graph and learning metadata
 
 **Goal:** Connect questions to a small, reviewable set of concepts and
-prerequisites.
+prerequisites. **Foundation implemented:** the versioned `data/concepts.json`
+graph contains three original draft concepts; corpus-backed CLI and web
+workflows validate question references and graph structure. The graph is
+exposed through `GET /api/concepts`, and all concepts remain unreviewed.
 
 - Define versioned concept records and prerequisite edges for the pilot topic.
+  **Done:** `saemphysics validate-concepts` checks unique IDs, known prerequisites,
+  and acyclic structure.
 - Add concept identifiers to question records and validate references.
+  **Done:** pilot questions link to constant acceleration, displacement, and
+  final velocity; validated corpus workflows reject unknown IDs.
 - Record teaching moves (physical intuition, assumptions, limiting case,
   misconception) without imitating any author's protected expression.
-- **Exit check:** a graph validation test catches unknown concepts and cycles;
-  the pilot questions map to reviewed concepts.
+- **Remaining:** a qualified teaching/subject reviewer must review the
+  definitions and prerequisite relationships before they are treated as
+  approved curriculum. Structural tests cover unknown concepts and cycles.
 
 ## Month 7 — Structured explanation plans
 
