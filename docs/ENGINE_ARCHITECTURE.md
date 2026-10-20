@@ -137,6 +137,38 @@ The connected outcomes and ordered implementation path are described in
 the learner platform reusing those reviewed artifacts, and the cognitive/quantum
 research direction all build on the same engine rather than separate models.
 
+## Student resources and sales boundary
+
+The `/products` page presents an original constant-acceleration study-pack
+draft alongside the local practice tools. Hosted checkout links are disabled
+by default and accepted only from the configured Razorpay and PayPal domains.
+Enabling checkout requires seller/contact details, HTTPS policy URLs, and an
+explicit teacher-review flag; the suggested prices on the page must still be
+matched manually to provider links. Fulfilment is manual, and payment,
+eligibility, tax, legal-policy, and content-review responsibilities remain
+with the seller. These gates do not make the local-only server suitable for
+public deployment, and no public deployment or live transaction is configured.
+
+## Student-facing solver
+
+The `/student` page now offers the same four exact math operations as the full
+workbench in addition to corpus-based practice: constant-acceleration motion,
+differentiation, definite integration, and square linear systems. The browser
+collects operation-specific fields and sends a typed solve request to the
+existing `/api/interact` endpoint; Python remains responsible for semantic
+validation, capability routing, verification, and response assembly. The page
+displays those exact results, checks, and execution trace rather than
+reimplementing math in JavaScript.
+
+This follows the abstraction and traceability principles described in the
+uploaded computing study notes: keep meaning and input data separate from
+execution, and preserve diagnostics at the interface boundary. The uploaded
+Book 1 and Book 2 files in this repository are study notes, not the complete
+original proceedings volume or complete SICP text. Neither these notes nor
+the current implementation establish portability to arbitrary processors or
+quantum hardware; those require explicit backend specifications and
+conformance testing.
+
 Cloud direction, educational-source rights, and the owner's intended ethical
 source-review principles are recorded in
 [`PROJECT_PRINCIPLES.md`](./PROJECT_PRINCIPLES.md). Those principles describe

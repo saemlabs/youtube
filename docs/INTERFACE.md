@@ -76,7 +76,29 @@ saemphysics web
 Open `/student` on the same local server for a small Python-rendered
 student/teacher page. It links to the SaemPhysics YouTube profile and uses
 `process_student_request` for both question practice and answer grading; it
-does not contain a separate solver or grading implementation.
+does not contain a separate solver or grading implementation. Its calculation
+panel also exposes the same exact constant-acceleration, differentiation,
+definite-integral, and linear-system operations as the full workbench. Browser
+requests go to `/api/interact`; exact results, verification checks, and
+execution traces come from the shared Python processor. Inputs and returned
+content are rendered as text rather than executable markup.
+
+Open `/products` for the original constant-acceleration study-pack preview.
+Checkout is disabled by default. The preview shows suggested pilot prices only;
+they are not connected to or verified against a live provider price. Sales can
+only be enabled by setting `SAEMPHYSICS_SALES_ENABLED=true` and supplying
+`SAEMPHYSICS_RAZORPAY_PAYMENT_URL`,
+`SAEMPHYSICS_PAYPAL_PAYMENT_URL`, `SAEMPHYSICS_SELLER_NAME`,
+`SAEMPHYSICS_SUPPORT_EMAIL`, `SAEMPHYSICS_TERMS_URL`,
+`SAEMPHYSICS_PRIVACY_URL`, `SAEMPHYSICS_REFUNDS_URL`, and
+`SAEMPHYSICS_NOTES_REVIEWED=true`. Both payment URLs must use HTTPS and match
+the expected hosted-checkout provider domains; policy links must use HTTPS.
+The seller is responsible for confirming provider eligibility, exact prices,
+taxes, policies, and local legal requirements. Fulfilment is manual after
+payment confirmation. Do not enable checkout until the product has been
+teacher-reviewed and the seller, policies, payment links, and fulfilment
+process have been verified. This is still a loopback-only prototype, not a
+public sales deployment.
 
 Open `/teacher` for a focused local lesson studio. It accepts an original
 constant-acceleration example, runs the exact calculation, attaches passing
@@ -119,7 +141,8 @@ Supported calculations are the exact operations accepted by Semantic IR:
 constant-acceleration motion, differentiation, definite integration, and exact
 square linear-system solving. Unsupported or approximate operations fail
 explicitly. The response contains the typed result, verification checks, and
-execution trace.
+execution trace. These are the current software backends, not a promise of
+support for arbitrary hardware or quantum devices.
 
 ### Practice and answer submission
 

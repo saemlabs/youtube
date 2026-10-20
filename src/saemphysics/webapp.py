@@ -1,6 +1,7 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import ipaddress
 import json
+import os
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs
@@ -10,6 +11,7 @@ from pydantic import ValidationError
 from saemphysics.central import StudentRequest, process_student_request
 from saemphysics.concepts import load_concept_graph
 from saemphysics.models import QuestionRecord
+from saemphysics.products_frontend import render_products_page
 from saemphysics.runtime import NativeBackendError
 from saemphysics.sources import SourceManifest, load_question_corpus
 from saemphysics.student_frontend import render_student_page
@@ -26,6 +28,7 @@ _ASSETS = {
     "/assets/app.css": ("app.css", "text/css; charset=utf-8"),
     "/assets/app.js": ("app.js", "text/javascript; charset=utf-8"),
     "/assets/student.css": ("student.css", "text/css; charset=utf-8"),
+    "/assets/student.js": ("student.js", "text/javascript; charset=utf-8"),
 }
 
 
@@ -66,6 +69,22 @@ def create_server(
     )
     question_by_id = {question.question_id: question for question in questions}
     web_root = root / "web"
+    sales_enabled = os.environ.get("SAEMPHYSICS_SALES_ENABLED") == "true"
+    sales_config = {
+        "sales_enabled": sales_enabled,
+        "razorpay_payment_url": os.environ.get(
+            "SAEMPHYSICS_RAZORPAY_PAYMENT_URL"
+        ),
+        "paypal_payment_url": os.environ.get("SAEMPHYSICS_PAYPAL_PAYMENT_URL"),
+        "seller_name": os.environ.get("SAEMPHYSICS_SELLER_NAME"),
+        "support_email": os.environ.get("SAEMPHYSICS_SUPPORT_EMAIL"),
+        "terms_url": os.environ.get("SAEMPHYSICS_TERMS_URL"),
+        "privacy_url": os.environ.get("SAEMPHYSICS_PRIVACY_URL"),
+        "refunds_url": os.environ.get("SAEMPHYSICS_REFUNDS_URL"),
+        "notes_reviewed": os.environ.get("SAEMPHYSICS_NOTES_REVIEWED") == "true",
+    }
+    if sales_enabled:
+        render_products_page(**sales_config)
 
     class WorkbenchHandler(BaseHTTPRequestHandler):
         server_version = "SaemPhysicsWorkbench/0.1"
@@ -118,6 +137,12 @@ def create_server(
                 return
             if self.path == "/teacher":
                 self._send_html(200, render_teacher_page())
+                return
+            if self.path == "/products":
+                self._send_html(
+                    200,
+                    render_products_page(**sales_config),
+                )
                 return
             if self.path == "/api/health":
                 self._send_json(200, {"status": "ok", "question_count": len(questions)})

@@ -95,13 +95,17 @@ def render_student_page(
     <meta name="theme-color" content="#10141b">
     <title>SaemPhysics · Student and teacher</title>
     <link rel="stylesheet" href="/assets/student.css">
+    <script src="/assets/student.js" defer></script>
   </head>
   <body>
     <main class="page">
       <header class="topbar">
         <a class="brand" href="/student">SaemPhysics <span>Student space</span></a>
-        <a class="teacher-link" href="{TEACHER_CHANNEL_URL}" target="_blank"
-           rel="noopener noreferrer">Meet your teacher · YouTube ↗</a>
+        <nav aria-label="SaemPhysics links">
+          <a class="teacher-link" href="/products">Study resources</a>
+          <a class="teacher-link" href="{TEACHER_CHANNEL_URL}" target="_blank"
+             rel="noopener noreferrer">YouTube ↗</a>
+        </nav>
       </header>
       <section class="welcome">
         <p class="eyebrow">LEARN WITH SAEMPHYSICS</p>
@@ -121,6 +125,23 @@ def render_student_page(
           </select>
           <button class="button" type="submit">Open question</button>
         </form>
+      </section>
+      <section class="card" aria-labelledby="solver-title">
+        <p class="eyebrow">VERIFIED MATH TOOLS</p>
+        <h2 id="solver-title">Solve and check a calculation</h2>
+        <p class="muted">Choose a supported exact operation. The shared processor checks your input and returns its result, verification, and execution trace.</p>
+        <form id="student-solver-form">
+          <label for="student-operation">Calculation</label>
+          <select id="student-operation" name="operation">
+            <option value="solve_constant_acceleration">Constant acceleration</option>
+            <option value="differentiate">Differentiate an expression</option>
+            <option value="definite_integral">Definite integral</option>
+            <option value="solve_linear_system">Exact linear system</option>
+          </select>
+          <div id="student-operation-fields"></div>
+          <button class="button" id="student-solve-button" type="submit">Solve and verify</button>
+        </form>
+        <div id="student-solve-result" aria-live="polite"></div>
       </section>
       {question_panel}
       <footer>

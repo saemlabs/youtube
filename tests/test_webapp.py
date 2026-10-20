@@ -23,6 +23,25 @@ def workbench_server():
         thread.join(timeout=2)
 
 
+@pytest.fixture
+def workbench_server_factory():
+    servers = []
+
+    def start():
+        server = create_server(port=0, project_root=Path.cwd())
+        thread = Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        servers.append((server, thread))
+        return f"http://127.0.0.1:{server.server_port}"
+
+    yield start
+
+    for server, thread in servers:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
 def get_json(base_url, path):
     with urlopen(f"{base_url}{path}", timeout=3) as response:
         return response.status, response.headers, json.loads(response.read())
@@ -78,6 +97,201 @@ def test_python_student_frontend_shows_teacher_profile_and_safe_question_picker(
     assert "synthetic-constant-acceleration-001" in page
     assert "official_answer" not in page
     assert response.headers["Content-Security-Policy"].startswith("default-src 'self'")
+
+
+def test_student_frontend_exposes_shared_verified_math_capabilities(workbench_server):
+    with urlopen(f"{workbench_server}/student", timeout=3) as response:
+        page = response.read().decode("utf-8")
+    with urlopen(f"{workbench_server}/assets/student.js", timeout=3) as response:
+        script = response.read().decode("utf-8")
+
+    assert "Solve and check a calculation" in page
+    assert 'id="student-operation"' in page
+    assert "solve_linear_system" in page
+    assert 'src="/assets/student.js"' in page
+    assert response.headers["Content-Security-Policy"].startswith("default-src 'self'")
+    assert 'fetch("/api/interact"' in script
+    assert "verification?.checks" in script
+    assert "response.trace" in script
+    assert "innerHTML" not in script
+
+
+@pytest.mark.parametrize(
+    ("calculation", "expected_result"),
+    [
+        (
+            {
+                "operation": "solve_constant_acceleration",
+                "initial_velocity_m_s": "3",
+                "acceleration_m_s2": "2",
+                "time_s": "4",
+            },
+            {
+                "initial_velocity_m_s": "3",
+                "acceleration_m_s2": "2",
+                "time_s": "4",
+                "displacement_m": "28",
+                "final_velocity_m_s": "11",
+            },
+        ),
+        (
+            {"operation": "differentiate", "expression": "x**3"},
+            {
+                "expression": "x**3",
+                "variable": "x",
+                "derivative": "3*x**2",
+                "checks": [
+                    {
+                        "name": "symbolic_derivative",
+                        "passed": True,
+                        "details": "Derivative residual: 0",
+                    }
+                ],
+            },
+        ),
+        (
+            {
+                "operation": "definite_integral",
+                "expression": "2 + 3*x",
+                "lower_bound": "0",
+                "upper_bound": "4",
+            },
+            None,
+        ),
+        (
+            {
+                "operation": "solve_linear_system",
+                "coefficients": [["2", "1"], ["1", "-1"]],
+                "right_hand_side": ["5", "1"],
+            },
+            {
+                "solution": ["2", "1"],
+                "determinant": "-3",
+                "residuals": ["0", "0"],
+                "checks": [
+                    {
+                        "name": "linear_system_residual",
+                        "passed": True,
+                        "details": "A*x - b = (0, 0)",
+                    }
+                ],
+            },
+        ),
+    ],
+)
+def test_student_solver_api_returns_verified_results(
+    workbench_server, calculation, expected_result
+):
+    status, response = post_json(
+        workbench_server,
+        {
+            "intent": "solve",
+            "calculation": {
+                "question_id": "student-workbench-calculation",
+                **calculation,
+            },
+        },
+    )
+
+    assert status == 200
+    assert response["status"] == "completed"
+    assert response["verification"]["status"] == "passed"
+    assert all(check["passed"] for check in response["verification"]["checks"])
+    result = response["artifact"]["result"]
+    if calculation["operation"] == "definite_integral":
+        assert result["value"] == "32"
+    else:
+        assert result == expected_result
+    assert response["trace"][-1]["layer"] == "verification"
+
+
+def test_product_page_is_a_prelaunch_catalog_by_default(workbench_server):
+    with urlopen(f"{workbench_server}/products", timeout=3) as response:
+        page = response.read().decode("utf-8")
+
+    assert response.status == 200
+    assert "Constant Acceleration Starter Notes" in page
+    assert "₹99 one-time" in page
+    assert "US$2.99 one-time" in page
+    assert "checkout is not enabled yet" in page
+    assert "href=\"https://www.youtube.com/@SaemPhysics\"" in page
+    assert "Razorpay" not in page.split("Pre-launch preview")[0]
+
+
+def test_product_page_uses_configured_hosted_payment_links(
+    workbench_server_factory, monkeypatch
+):
+    monkeypatch.setenv("SAEMPHYSICS_SALES_ENABLED", "true")
+    monkeypatch.setenv(
+        "SAEMPHYSICS_RAZORPAY_PAYMENT_URL",
+        "https://rzp.io/i/sample-notes",
+    )
+    monkeypatch.setenv(
+        "SAEMPHYSICS_PAYPAL_PAYMENT_URL",
+        "https://www.paypal.com/ncp/payment/sample-notes",
+    )
+    monkeypatch.setenv("SAEMPHYSICS_SELLER_NAME", "SaemPhysics")
+    monkeypatch.setenv("SAEMPHYSICS_SUPPORT_EMAIL", "teacher@example.com")
+    monkeypatch.setenv("SAEMPHYSICS_TERMS_URL", "https://saemphysics.example/terms")
+    monkeypatch.setenv(
+        "SAEMPHYSICS_PRIVACY_URL",
+        "https://saemphysics.example/privacy",
+    )
+    monkeypatch.setenv(
+        "SAEMPHYSICS_REFUNDS_URL",
+        "https://saemphysics.example/refunds",
+    )
+    monkeypatch.setenv("SAEMPHYSICS_NOTES_REVIEWED", "true")
+    base_url = workbench_server_factory()
+    with urlopen(f"{base_url}/products", timeout=3) as response:
+        page = response.read().decode("utf-8")
+    assert response.status == 200
+    assert 'href="https://rzp.io/i/sample-notes"' in page
+    assert 'href="https://www.paypal.com/ncp/payment/sample-notes"' in page
+    assert "SaemPhysics</p>" in page
+    assert 'href="https://saemphysics.example/refunds"' in page
+    assert 'rel="noopener noreferrer"' in page
+
+
+@pytest.mark.parametrize(
+    ("provider", "url"),
+    [
+        ("RAZORPAY", "https://evil.example/checkout"),
+        ("PAYPAL", "http://www.paypal.com/ncp/payment/notes"),
+        ("PAYPAL", "https://user@paypal.com/ncp/payment/notes"),
+        ("RAZORPAY", "https://rzp.io/i/notes#fragment"),
+    ],
+)
+def test_sales_enabled_rejects_untrusted_or_non_https_payment_links(
+    workbench_server_factory, monkeypatch, provider, url
+):
+    monkeypatch.setenv("SAEMPHYSICS_SALES_ENABLED", "true")
+    monkeypatch.setenv(
+        "SAEMPHYSICS_RAZORPAY_PAYMENT_URL",
+        "https://rzp.io/i/sample-notes",
+    )
+    monkeypatch.setenv(
+        "SAEMPHYSICS_PAYPAL_PAYMENT_URL",
+        "https://www.paypal.com/ncp/payment/sample-notes",
+    )
+    monkeypatch.setenv(f"SAEMPHYSICS_{provider}_PAYMENT_URL", url)
+
+    with pytest.raises(ValueError, match="checkout URL is invalid"):
+        create_server(port=0, project_root=Path.cwd())
+
+
+def test_sales_enabled_requires_reviewed_content_and_policy_links(monkeypatch):
+    monkeypatch.setenv("SAEMPHYSICS_SALES_ENABLED", "true")
+    monkeypatch.setenv(
+        "SAEMPHYSICS_RAZORPAY_PAYMENT_URL",
+        "https://rzp.io/i/sample-notes",
+    )
+    monkeypatch.setenv(
+        "SAEMPHYSICS_PAYPAL_PAYMENT_URL",
+        "https://www.paypal.com/ncp/payment/sample-notes",
+    )
+    with pytest.raises(ValueError, match="HTTPS terms, privacy, and refund"):
+        create_server(port=0, project_root=Path.cwd())
 
 
 def test_python_student_frontend_uses_central_practice_and_grading_flow(workbench_server):

@@ -13,6 +13,7 @@ a { color: #a5ecd5; }
 .brand { color: #edf1f7; font-size: 18px; font-weight: 750; text-decoration: none; }
 .brand span { margin-left: 8px; color: #9ba7b7; font-size: 12px; font-weight: 500; }
 .teacher-link { font-size: 13px; }
+.topbar nav { display: flex; flex-wrap: wrap; gap: 12px; }
 .welcome { margin: 26px 0 18px; padding: 25px; border: 1px solid #33413f; border-radius: 14px; background: radial-gradient(ellipse at 82% 35%, #244339, #1b242e 68%); }
 .eyebrow { margin: 0 0 10px; color: #87e0c2; font-size: 11px; font-weight: 750; letter-spacing: .12em; }
 h1 { margin: 0 0 10px; font-size: clamp(28px, 6vw, 42px); letter-spacing: -.04em; }
@@ -24,7 +25,22 @@ select, input:not([type="radio"]), textarea { width: 100%; min-height: 44px; pad
 textarea { resize: vertical; line-height: 1.5; }
 input:focus, select:focus, textarea:focus { outline: 2px solid #67c8aa; outline-offset: 1px; }
 .input-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.input-grid > div { min-width: 0; }
+.card dl { display: grid; grid-template-columns: minmax(130px, .4fr) 1fr; gap: 7px 12px; }
+.card dt { color: #9ba7b7; text-transform: capitalize; }
+.card dd { margin: 0; overflow-wrap: anywhere; }
+.card details { margin-top: 14px; color: #b4bfcd; }
+.card details li { margin: 7px 0; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+button:disabled { cursor: wait; opacity: .65; }
 .button { min-height: 42px; margin-top: 14px; padding: 0 16px; border: 0; border-radius: 7px; background: #87e0c2; color: #10231e; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.button.secondary { margin-left: 8px; background: #273343; color: #dce9ff; }
+.price-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+.price-grid > div { display: grid; gap: 7px; padding: 14px; border: 1px solid #2a3340; border-radius: 8px; background: #151b24; }
+.price-grid strong { color: #b4bfcd; font-size: 12px; }
+.price-grid span { color: #a5ecd5; font-size: 19px; font-weight: 750; }
+.status { padding: 12px; border: 1px solid #65532e; border-radius: 8px; background: #2e281a; color: #f1d693; font-size: 13px; }
+.seller-details { margin-top: 18px; padding-top: 12px; border-top: 1px solid #2a3340; color: #b4bfcd; font-size: 12px; }
+.seller-details nav { display: flex; flex-wrap: wrap; gap: 9px; }
 .button:hover { background: #a3efd7; }
 .question-text { color: #dce3ed; font-size: 15px; line-height: 1.7; }
 .choice { display: flex; align-items: center; gap: 10px; margin-top: 9px; padding: 11px; border: 1px solid #2a3340; border-radius: 8px; background: #151b24; color: #dce3ed; cursor: pointer; }
@@ -48,4 +64,5 @@ footer span { white-space: nowrap; }
   .brand span { display: block; margin: 4px 0 0; }
   .card, .welcome { padding: 18px; }
   .input-grid { grid-template-columns: 1fr; gap: 0; }
+  .price-grid { grid-template-columns: 1fr; }
 }
