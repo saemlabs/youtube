@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from pathlib import Path, PurePosixPath
 from typing import Literal
 
@@ -16,10 +17,16 @@ class SourceDocument(StrictModel):
     document_id: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]*$")
     title: str = Field(min_length=1)
     category: Literal["computing", "mathematics", "physics", "quantum", "vision"]
+    author_or_instructor: str | None = Field(default=None, min_length=1)
+    course: str | None = Field(default=None, min_length=1)
+    version: str | None = Field(default=None, min_length=1)
     path: str | None = Field(default=None, min_length=1)
     url: HttpUrl | None = None
     rights_status: RightsStatus = RightsStatus.REVIEW_REQUIRED
     rights_evidence: str | None = None
+    license_name: str | None = Field(default=None, min_length=1)
+    license_url: HttpUrl | None = None
+    accessed_on: date | None = None
     ingestion_status: Literal[
         "catalogued",
         "extraction_pending",
@@ -48,6 +55,14 @@ class SourceDocument(StrictModel):
         ):
             raise ValueError(
                 "A rights evidence note is required when rights are not awaiting review"
+            )
+        if (self.license_name is None) != (self.license_url is None):
+            raise ValueError("License name and license URL must be recorded together")
+        if self.rights_status == RightsStatus.LICENSED and (
+            self.license_name is None or self.license_url is None
+        ):
+            raise ValueError(
+                "Licensed sources require the license name and its official URL"
             )
         pages = [entry.page for entry in self.page_mapping]
         if len(pages) != len(set(pages)):

@@ -8,6 +8,8 @@
 - `web/`: local browser workbench and styles for the Python-rendered student page.
 - `docs/`: uploaded reference material grouped by topic; see the [document index](./docs/README.md).
 - [Phased build roadmap](./docs/ROADMAP.md): monthly milestones and the current first task.
+- [Project principles](./docs/PROJECT_PRINCIPLES.md): unified-engine direction,
+  cloud intent, and educational/religious source stewardship.
 - `prototypes/`: standalone browser prototypes that are not yet connected to the Python pipeline.
 
 Run a structured request through the verified Python backend:

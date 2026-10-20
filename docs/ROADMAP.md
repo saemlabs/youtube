@@ -12,6 +12,10 @@ unfinished work forward rather than starting parallel systems.
   corpus over broad, unreviewed ingestion.
 - Preserve source, page/question identifiers, and rights status. Do not
   redistribute material unless its licence permits it.
+- Follow the owner's source and hosting direction in
+  [`PROJECT_PRINCIPLES.md`](./PROJECT_PRINCIPLES.md): course-specific MIT
+  OpenCourseWare rights review, traceable review of religious sources, and
+  privacy/security controls before any Google Cloud or AWS deployment.
 - Keep source answer keys, computed results, and human-reviewed conclusions
   distinct.
 - Treat model-generated OCR, derivations, and storyboards as proposals.

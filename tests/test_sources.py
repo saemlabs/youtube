@@ -78,6 +78,42 @@ def test_non_review_rights_status_requires_evidence():
         make_document(rights_status=RightsStatus.LICENSED)
 
 
+def test_licensed_source_requires_license_name_and_official_url():
+    with pytest.raises(ValidationError, match="license name and its official URL"):
+        make_document(
+            rights_status=RightsStatus.LICENSED,
+            rights_evidence="The source permits reuse under a license.",
+        )
+
+
+def test_source_attribution_and_license_metadata_are_structured():
+    document = make_document(
+        author_or_instructor="Example Instructor",
+        course="Example Course 1.001",
+        version="Fall 2026",
+        url="https://example.org/course",
+        rights_status=RightsStatus.LICENSED,
+        rights_evidence="The linked course page identifies the applicable license.",
+        license_name="Creative Commons Attribution 4.0 International",
+        license_url="https://creativecommons.org/licenses/by/4.0/",
+        accessed_on="2026-10-20",
+    )
+
+    assert document.author_or_instructor == "Example Instructor"
+    assert document.course == "Example Course 1.001"
+    assert document.version == "Fall 2026"
+    assert str(document.license_url) == "https://creativecommons.org/licenses/by/4.0/"
+    assert document.accessed_on.isoformat() == "2026-10-20"
+
+
+def test_license_name_and_url_must_be_recorded_together():
+    with pytest.raises(ValidationError, match="must be recorded together"):
+        make_document(
+            license_name="Creative Commons Attribution",
+            rights_status=RightsStatus.REVIEW_REQUIRED,
+        )
+
+
 def test_remote_source_can_be_catalogued_without_a_local_path():
     document = make_document(path=None, url="https://example.org/source.pdf")
 

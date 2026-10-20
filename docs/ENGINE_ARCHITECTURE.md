@@ -65,3 +65,15 @@ research experiments for quantum-computing targets. Each step must preserve
 the same typed boundaries and review gates. Quantum execution, adaptive AI
 teaching, durable learner accounts, and public publishing are future work and
 are not implied by this prototype.
+
+Cloud direction, educational-source rights, and the owner's intended ethical
+source-review principles are recorded in
+[`PROJECT_PRINCIPLES.md`](./PROJECT_PRINCIPLES.md). Those principles describe
+future requirements; they do not mean that a cloud deployment or source
+authentication has been completed.
+
+The source catalog supports structured author/instructor, course, version,
+license, and access-date metadata. `review_required` remains the default; a
+record marked `licensed` must provide the license name, official URL, and
+rights-evidence note. The schema records evidence but cannot itself determine
+whether an interpretation of a license is legally correct.
