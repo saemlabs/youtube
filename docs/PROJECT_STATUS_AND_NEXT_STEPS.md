@@ -48,12 +48,12 @@ vision, not a current product capability. See the
 
 ## Browser page and hosting boundary
 
-The GitHub Pages site is published at
+The GitHub Pages site is configured for
 <https://saemlabs.github.io/youtube/> as a separate, responsive, static
-introduction that can be read in current desktop and mobile browsers. It links
-to the SaemPhysics YouTube channel and repository and accurately states that
-the interactive workbench is not hosted there. The GitHub Actions workflow
-deploys the contents of `site/` after changes are pushed to `main`.
+introduction designed for current desktop and mobile browsers. It links to the
+SaemPhysics YouTube channel and repository and accurately states that the
+interactive workbench is not hosted there. The GitHub Actions workflow
+publishes only the contents of `site/` after site changes are pushed to `main`.
 
 GitHub Pages serves static files only. It does not run the Python processor,
 student practice API, teacher studio, or checkout. The interactive app remains
