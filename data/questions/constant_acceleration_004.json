@@ -13,8 +13,13 @@
   },
   "question_text": "A cart moves at -2 m/s and accelerates at 2 m/s^2 for 2 s. Find the displacement and final velocity.",
   "diagram_assets": [],
-  "options": [],
-  "official_answer": null,
+  "options": [
+    {"key": "A", "text": "-4 m; 2 m/s"},
+    {"key": "B", "text": "0 m; -2 m/s"},
+    {"key": "C", "text": "0 m; 2 m/s"},
+    {"key": "D", "text": "4 m; 2 m/s"}
+  ],
+  "official_answer": "C",
   "concepts": ["constant_acceleration", "displacement", "final_velocity"],
   "solution": {
     "status": "not_solved",

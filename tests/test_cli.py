@@ -179,3 +179,53 @@ def test_cli_rejects_unknown_corpus_question_id(tmp_path, capsys):
     captured = capsys.readouterr()
     assert captured.out == ""
     assert "not found in the validated corpus" in captured.err
+
+
+def test_cli_runs_a_test_and_grades_submitted_answers(tmp_path, capsys):
+    start_path = tmp_path / "start-test.json"
+    start_path.write_text(
+        json.dumps(
+            {
+                "intent": "start_test",
+                "question_ids": [
+                    "synthetic-constant-acceleration-001",
+                    "synthetic-constant-acceleration-002",
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["interact", str(start_path)]) == 0
+    started = json.loads(capsys.readouterr().out)
+    assert started["status"] == "ready"
+    assert len(started["artifact"]["questions"]) == 2
+    assert all(
+        "official_answer" not in question
+        for question in started["artifact"]["questions"]
+    )
+
+    submit_path = tmp_path / "submit-test.json"
+    submit_path.write_text(
+        json.dumps(
+            {
+                "intent": "submit_test",
+                "question_ids": [
+                    "synthetic-constant-acceleration-001",
+                    "synthetic-constant-acceleration-002",
+                ],
+                "answers": {
+                    "synthetic-constant-acceleration-001": "B",
+                    "synthetic-constant-acceleration-002": "A",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["interact", str(submit_path)]) == 0
+    graded = json.loads(capsys.readouterr().out)
+    assert graded["status"] == "completed"
+    assert graded["artifact"]["correct_count"] == 2
+    assert graded["artifact"]["total"] == 2
+    assert graded["artifact"]["percentage"] == 100

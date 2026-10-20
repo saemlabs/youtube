@@ -222,7 +222,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                     _read_json_object(args.student_request)
                 )
                 resolver = None
-                if request.question_id is not None and request.question is None:
+                if (
+                    request.question_id is not None or request.question_ids
+                ) and request.question is None:
                     manifest = SourceManifest.model_validate(
                         _read_json_object(args.manifest)
                     )

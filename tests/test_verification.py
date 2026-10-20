@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from saemphysics.models import (
+    AnswerOption,
     QuestionRecord,
     RightsStatus,
     SolutionArtifact,
@@ -39,6 +40,24 @@ def test_question_record_keeps_official_and_computed_answers_separate():
 
     assert question.official_answer == "C"
     assert question.solution.numerical_result == "14 m/s"
+
+
+def test_multiple_choice_answer_keys_and_options_are_consistent():
+    with pytest.raises(ValidationError, match="option keys must be unique"):
+        make_question(
+            options=[
+                AnswerOption(key="A", text="First"),
+                AnswerOption(key="A", text="Duplicate"),
+            ]
+        )
+    with pytest.raises(ValidationError, match="must match one"):
+        make_question(
+            options=[
+                AnswerOption(key="A", text="First"),
+                AnswerOption(key="B", text="Second"),
+            ],
+            official_answer="C",
+        )
 
 
 def test_publication_is_blocked_before_verification_and_review():

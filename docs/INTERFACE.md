@@ -94,6 +94,43 @@ official answer only when that answer matches one of the stored option keys.
 It does not invent an answer or persist scores. After submission, verified
 solution steps may be returned; an unverified explanation remains unavailable.
 
+### Multi-question tests
+
+Start a test from selected corpus IDs:
+
+```json
+{
+  "intent": "start_test",
+  "question_ids": [
+    "synthetic-constant-acceleration-001",
+    "synthetic-constant-acceleration-002"
+  ]
+}
+```
+
+`start_test` returns question text and options only. Submit one option key for
+every same question ID:
+
+```json
+{
+  "intent": "submit_test",
+  "question_ids": [
+    "synthetic-constant-acceleration-001",
+    "synthetic-constant-acceleration-002"
+  ],
+  "answers": {
+    "synthetic-constant-acceleration-001": "B",
+    "synthetic-constant-acceleration-002": "A"
+  }
+}
+```
+
+The grader rejects duplicate IDs, missing/extra answers, questions without
+options, and any test with an absent or invalid answer key. It reports an
+aggregate score and per-question feedback after submission. Attempts are
+stateless and not persisted. Synthetic pilot keys are authored for this
+project and solver-tested; they are not official exam answer keys.
+
 ### Explain and make a lesson
 
 `explain` assembles stored assumptions, derivation, result, and passing checks

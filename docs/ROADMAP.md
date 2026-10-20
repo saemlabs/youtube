@@ -35,6 +35,9 @@ strict, provenance-aware format for a question before collecting a real corpus.
 3. Define one student-facing request/response contract over supported
    capabilities. **Started:** see [`INTERFACE.md`](./INTERFACE.md) and
    `saemphysics interact`.
+   The stateless multi-question test start/submit loop is now implemented for
+   keyed multiple-choice records; durable attempts and learner progress remain
+   future work.
 4. Validate canonical question JSON and add clearly synthetic starter records.
    Five original constant-acceleration examples now pass the corpus and solver
    checks; they remain unsolved/unreviewed in the question bank.

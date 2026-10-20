@@ -146,17 +146,22 @@ def test_each_synthetic_pilot_prompt_has_a_passing_exact_solver_case():
     )
     questions = load_question_corpus("data/questions", manifest)
     cases = {
-        "synthetic-constant-acceleration-001": ("3", "2", "4", "28", "11"),
-        "synthetic-constant-acceleration-002": ("4", "3/2", "2", "11", "7"),
-        "synthetic-constant-acceleration-003": ("5", "-1", "3", "21/2", "2"),
-        "synthetic-constant-acceleration-004": ("-2", "2", "2", "0", "2"),
-        "synthetic-constant-acceleration-005": ("3", "0", "5", "15", "3"),
+        "synthetic-constant-acceleration-001": ("3", "2", "4", "28", "11", "28 m; 11 m/s"),
+        "synthetic-constant-acceleration-002": ("4", "3/2", "2", "11", "7", "11 m; 7 m/s"),
+        "synthetic-constant-acceleration-003": ("5", "-1", "3", "21/2", "2", "10.5 m; 2 m/s"),
+        "synthetic-constant-acceleration-004": ("-2", "2", "2", "0", "2", "0 m; 2 m/s"),
+        "synthetic-constant-acceleration-005": ("3", "0", "5", "15", "3", "15 m; 3 m/s"),
     }
 
     for question in questions:
-        initial_velocity, acceleration, time, displacement, final_velocity = cases[
-            question.question_id
-        ]
+        (
+            initial_velocity,
+            acceleration,
+            time,
+            displacement,
+            final_velocity,
+            answer_text,
+        ) = cases[question.question_id]
         result = execute_plan(
             compile_request(
                 SemanticIR(
@@ -171,6 +176,13 @@ def test_each_synthetic_pilot_prompt_has_a_passing_exact_solver_case():
         assert result.result.displacement_m == displacement
         assert result.result.final_velocity_m_s == final_velocity
         assert result.verification.status == "passed"
+        assert question.official_answer is not None
+        correct_option = next(
+            option
+            for option in question.options
+            if option.key == question.official_answer
+        )
+        assert correct_option.text == answer_text
 
 
 def test_corpus_rejects_unknown_source_and_mismatched_rights(tmp_path):

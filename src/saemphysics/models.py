@@ -96,3 +96,15 @@ class QuestionRecord(StrictModel):
     solution: SolutionArtifact = Field(default_factory=SolutionArtifact)
     teaching_plan: TeachingPlan = Field(default_factory=TeachingPlan)
     review: ReviewRecord = Field(default_factory=ReviewRecord)
+
+    @model_validator(mode="after")
+    def validate_answer_options(self):
+        option_keys = [option.key for option in self.options]
+        if len(option_keys) != len(set(option_keys)):
+            raise ValueError("Answer option keys must be unique")
+        if self.options and self.official_answer is not None:
+            if self.official_answer.strip().upper() not in set(option_keys):
+                raise ValueError(
+                    "official_answer must match one of the question's option keys"
+                )
+        return self

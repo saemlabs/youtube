@@ -31,6 +31,10 @@ implemented, while clearly marking unsupported work.
 List questions available for practice with `saemphysics list-questions`, then
 select one by ID using
 `saemphysics interact examples/requests/student_practice.json`.
+For a stateless multi-question test, run
+`saemphysics interact examples/requests/student_start_test.json`; submit
+answers with the matching IDs using
+`saemphysics interact examples/requests/student_submit_test.json`.
 
 ## Working foundation
 

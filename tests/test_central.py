@@ -152,6 +152,87 @@ def test_id_based_answer_submission_checks_resolved_options():
         )
 
 
+def test_start_test_withholds_answer_keys():
+    question = make_question()
+    response = process_student_request(
+        StudentRequest(
+            intent="start_test",
+            question_ids=[question.question_id],
+        ),
+        question_resolver=lambda question_id: question,
+    )
+
+    assert response.status == "ready"
+    assert response.artifact["question_ids"] == [question.question_id]
+    assert "official_answer" not in response.artifact["questions"][0]
+
+
+def test_submit_test_returns_score_and_per_question_feedback():
+    question = make_question(verified=True)
+    response = process_student_request(
+        StudentRequest(
+            intent="submit_test",
+            question_ids=[question.question_id],
+            answers={question.question_id: "B"},
+        ),
+        question_resolver=lambda question_id: question,
+    )
+
+    assert response.status == "completed"
+    assert response.artifact["correct_count"] == 1
+    assert response.artifact["total"] == 1
+    assert response.artifact["percentage"] == 100
+    assert response.artifact["results"] == [
+        {
+            "question_id": question.question_id,
+            "selected_option": "B",
+            "correct_option": "B",
+            "correct": True,
+        }
+    ]
+
+
+def test_submit_test_blocks_if_any_answer_key_is_missing():
+    question = make_question(official_answer=None)
+    request = StudentRequest(
+        intent="submit_test",
+        question_ids=[question.question_id],
+        answers={question.question_id: "A"},
+    )
+
+    with pytest.raises(ValueError, match="answer keys are missing"):
+        process_student_request(
+            request,
+            question_resolver=lambda question_id: question,
+        )
+
+
+def test_test_score_percentage_preserves_partial_scores():
+    question = make_question(verified=False)
+    second = question.model_copy(update={"question_id": "second-question"})
+    third = question.model_copy(update={"question_id": "third-question"})
+    questions = {
+        question.question_id: question,
+        second.question_id: second,
+        third.question_id: third,
+    }
+    response = process_student_request(
+        StudentRequest(
+            intent="submit_test",
+            question_ids=list(questions),
+            answers={
+                question.question_id: "B",
+                second.question_id: "A",
+                third.question_id: "A",
+            },
+        ),
+        question_resolver=questions.__getitem__,
+    )
+
+    assert response.artifact["correct_count"] == 1
+    assert response.artifact["percentage"] == 33.3
+
+
 def test_submission_grades_against_key_and_reveals_only_verified_work():
     question = make_question(verified=True)
     response = process_student_request(

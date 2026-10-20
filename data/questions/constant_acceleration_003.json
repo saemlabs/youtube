@@ -13,8 +13,13 @@
   },
   "question_text": "A vehicle moves at 5 m/s and accelerates at -1 m/s^2 for 3 s. Find the displacement and final velocity.",
   "diagram_assets": [],
-  "options": [],
-  "official_answer": null,
+  "options": [
+    {"key": "A", "text": "12 m; 2 m/s"},
+    {"key": "B", "text": "10.5 m; 5 m/s"},
+    {"key": "C", "text": "10.5 m; 3 m/s"},
+    {"key": "D", "text": "10.5 m; 2 m/s"}
+  ],
+  "official_answer": "D",
   "concepts": ["constant_acceleration", "displacement", "final_velocity"],
   "solution": {
     "status": "not_solved",
