@@ -17,6 +17,10 @@ outcomes:
 The first two have narrow working software slices. The third is a research
 vision, not a current product capability. See the
 [three-vision build path](./THREE_VISION_BUILD.md) for the intended order.
+The product ambition is broad physics and mathematics coverage; the current
+constant-acceleration work is only an initial example, not the subject scope.
+Build breadth as a curriculum and capability map, then implement and verify
+topics incrementally rather than claiming completeness prematurely.
 
 ## Built and tested
 
@@ -84,46 +88,68 @@ offer checkout.
 Work in this order; do not start the later phases until their prerequisites
 are met.
 
-1. **Review the student release content.** Have the teacher review and correct
+1. **Map physics and mathematics coverage.** Create a subject-to-capability
+   map spanning the intended breadth of physics and mathematics: domains,
+   topics, prerequisite relationships, representative problem types, and
+   status (implemented, tested, planned, or research). Identify shared
+   foundations such as units/dimensions, symbolic and numerical computation,
+   assumptions, verification, provenance, and human review. Do not treat this
+   map as a claim that every topic is already supported.
+2. **Study sources for each planned area.** Use the owner's provided books and
+   relevant MIT OpenCourseWare materials to inform the map and implementation.
+   Record the exact resource, sections/pages, access or edition details, and
+   applicable rights/licence evidence. Check the specific MIT OCW resource's
+   terms before copying, adapting, storing, or redistributing it; prefer
+   original explanations and problems where permission is unclear. Treat
+   source-derived notes as candidates for human accuracy and rights review.
+3. **Choose a broad but bounded first capability slice.** Select a connected
+   set of mathematical and physical ideas from the map, define typed inputs,
+   units, assumptions, exact or numerical method, limits, checks, and
+   conformance tests, then route it through the shared engine. Expand beyond
+   constant acceleration when evidence and review are ready.
+4. **Review the student release content.** Have the teacher review and correct
    the [constant-acceleration study pack](../products/constant-acceleration-starter-pack.md),
    its worked examples, exercises, answer checks, level, and limitations.
    Record whether it is approved for public use. Keep checkout off meanwhile.
-2. **Finish one teacher-to-student lesson.** Add a review/export step for the
-   existing lesson draft, preserving source/rights metadata, exact calculation
-   evidence, and reviewer approval. Reuse only that reviewed artifact in a
-   student lesson.
-3. **Build the first hosted interactive release deliberately.** Choose the
+5. **Finish the teacher-to-student lesson workflow.** Add review/export for
+   lesson artifacts that preserve source/rights metadata, calculation
+   evidence, and reviewer approval. Reuse only reviewed artifacts for students.
+6. **Build the first hosted interactive release deliberately.** Choose the
    backend host and deployment architecture. Before accepting student input,
    design authentication if needed, data minimization, retention/deletion,
    privacy notices, access controls, secrets, logging, backups, monitoring,
    incident response, and an operational owner. Keep GitHub Pages as the
    static frontend unless the backend is separately secured.
-4. **Prepare the first paid resource only after review.** Confirm rights,
+7. **Prepare the first paid resource only after review.** Confirm rights,
    seller identity, support contact, accessible terms/privacy/refund policies,
    provider accounts, currencies, exact displayed/provider prices, taxes,
    and fulfillment. Test with provider sandbox/test flows before considering
    live checkout.
-5. **Grow the learning corpus carefully.** Select one source with explicit
+8. **Grow the learning corpus carefully.** Select one source with explicit
    rights evidence, add a small reviewed batch with provenance, and test
    coverage and answer correctness before adding another topic or exam.
-6. **Improve teaching quality and accessibility.** Review explanations with
+9. **Improve teaching quality and accessibility.** Review explanations with
    subject/teaching expertise; add keyboard, screen-reader, contrast, captions,
    and mobile checks to every student-facing feature.
-7. **Continue native and probabilistic work against measured needs.** Add
+10. **Continue native and probabilistic work against measured needs.** Add
    capabilities only behind the shared contract and conformance tests. Keep
    probabilistic decisions opt-in with explicit evidence and acceptance checks.
-8. **Treat quantum computing as a separate experiment.** Define one reproducible
+11. **Treat quantum computing as a separate experiment.** Define one reproducible
    research question, classical baseline, resource limits, and benchmark before
    implementing or claiming a quantum advantage. Never route learner data to
    an experiment without explicit approval and safeguards.
 
 ## Start the next work session
 
-1. Read this note and the relevant section of
-   [the interface contract](./INTERFACE.md).
-2. Ask the owner/teacher to review the study pack and choose whether the next
-   task is content approval, lesson export, or hosted-backend design.
-3. Keep payments and public solver endpoints disabled unless their documented
+1. Read this note, the [three-vision build path](./THREE_VISION_BUILD.md),
+   [the interface contract](./INTERFACE.md), and the source/right policies in
+   [project principles](./PROJECT_PRINCIPLES.md).
+2. Build the physics-and-mathematics coverage map before choosing the next
+   engine capability. Identify and inspect the relevant user-provided book
+   material and MIT OCW sources for the selected areas.
+3. Record citations, sections, rights status, and uncertainties; do not copy
+   or redistribute source content without permission.
+4. Keep payments and public solver endpoints disabled unless their documented
    prerequisites are satisfied.
-4. Make one small change, run its targeted tests and then the full suite when
-   appropriate, and update this note if the project status changes.
+5. Implement one bounded, tested capability or curriculum slice, and update
+   this note as the status changes.
