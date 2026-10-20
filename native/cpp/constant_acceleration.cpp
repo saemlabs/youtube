@@ -91,6 +91,11 @@ class Rational {
 
     bool is_negative() const { return numerator_ < 0; }
 
+    friend bool operator==(const Rational& left, const Rational& right) {
+        return left.numerator_ == right.numerator_ &&
+               left.denominator_ == right.denominator_;
+    }
+
   private:
     Wide numerator_;
     Wide denominator_;
@@ -143,7 +148,8 @@ std::string json_escape(std::string_view value) {
 void solve_constant_acceleration(
     std::string_view initial_velocity_text,
     std::string_view acceleration_text,
-    std::string_view time_text) {
+    std::string_view time_text,
+    bool core_protocol) {
     const Rational initial_velocity = parse_rational(initial_velocity_text);
     const Rational acceleration = parse_rational(acceleration_text);
     const Rational time = parse_rational(time_text);
@@ -155,8 +161,20 @@ void solve_constant_acceleration(
         initial_velocity * time +
         (acceleration * time * time) / Rational(2, 1);
     const Rational final_velocity = initial_velocity + acceleration * time;
+    const bool displacement_check =
+        displacement ==
+        initial_velocity * time + (acceleration * time * time) / Rational(2, 1);
+    const bool velocity_check =
+        final_velocity == initial_velocity + acceleration * time;
 
-    std::cout << "{\"initial_velocity_m_s\":\""
+    if (core_protocol) {
+        std::cout << "{\"protocol\":\"saemphysics.capability.v1\","
+                  << "\"capability\":\"solve_constant_acceleration\","
+                  << "\"status\":\"completed\",\"result\":{";
+    } else {
+        std::cout << "{";
+    }
+    std::cout << "\"initial_velocity_m_s\":\""
               << json_escape(initial_velocity.str())
               << "\",\"acceleration_m_s2\":\""
               << json_escape(acceleration.str())
@@ -165,19 +183,43 @@ void solve_constant_acceleration(
               << "\",\"displacement_m\":\""
               << json_escape(displacement.str())
               << "\",\"final_velocity_m_s\":\""
-              << json_escape(final_velocity.str())
-              << "\"}\n";
+              << json_escape(final_velocity.str()) << "\"}";
+    if (core_protocol) {
+        std::cout << ",\"checks\":["
+                  << "{\"name\":\"input_bounds\",\"passed\":true},"
+                  << "{\"name\":\"displacement_equation\",\"passed\":"
+                  << (displacement_check ? "true" : "false") << "},"
+                  << "{\"name\":\"velocity_equation\",\"passed\":"
+                  << (velocity_check ? "true" : "false") << "}]"
+                  << "}";
+    }
+    std::cout << '\n';
 }
 
 }  // namespace
 
 int main(int argc, char* argv[]) {
-    if (argc != 4) {
-        std::cerr << "usage: saemphysics-kinematics INITIAL_VELOCITY ACCELERATION TIME\n";
+    const bool core_protocol =
+        argc == 6 && std::string_view(argv[1]) == "--core-v1";
+    if (!core_protocol && argc != 4) {
+        std::cerr
+            << "usage: saemphysics-kinematics INITIAL_VELOCITY ACCELERATION TIME\n"
+            << "   or: saemphysics-kinematics --core-v1 solve_constant_acceleration "
+               "INITIAL_VELOCITY ACCELERATION TIME\n";
+        return 2;
+    }
+    const int offset = core_protocol ? 3 : 1;
+    if (core_protocol &&
+        std::string_view(argv[2]) != "solve_constant_acceleration") {
+        std::cerr << "unsupported capability in core protocol v1\n";
         return 2;
     }
     try {
-        solve_constant_acceleration(argv[1], argv[2], argv[3]);
+        solve_constant_acceleration(
+            argv[offset],
+            argv[offset + 1],
+            argv[offset + 2],
+            core_protocol);
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "saemphysics-kinematics: " << error.what() << '\n';

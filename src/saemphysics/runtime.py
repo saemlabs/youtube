@@ -64,6 +64,8 @@ def _execute_native_kinematics(
         completed = subprocess.run(
             [
                 str(executable),
+                "--core-v1",
+                "solve_constant_acceleration",
                 initial_velocity_m_s,
                 acceleration_m_s2,
                 time_s,
@@ -82,6 +84,41 @@ def _execute_native_kinematics(
         raise NativeBackendError(f"Native kinematics capability failed: {detail}")
     try:
         payload = json.loads(completed.stdout)
+        expected_checks = [
+            "input_bounds",
+            "displacement_equation",
+            "velocity_equation",
+        ]
+        if not isinstance(payload, dict):
+            raise ValueError("Native core response must be a JSON object")
+        if set(payload) != {
+            "protocol",
+            "capability",
+            "status",
+            "result",
+            "checks",
+        }:
+            raise ValueError("Native core response has unsupported or missing fields")
+        if (
+            payload.get("protocol") != "saemphysics.capability.v1"
+            or payload.get("capability") != "solve_constant_acceleration"
+            or payload.get("status") != "completed"
+        ):
+            raise ValueError("Native core response has an unsupported protocol or status")
+        checks = payload.get("checks")
+        if (
+            not isinstance(checks, list)
+            or [check.get("name") for check in checks if isinstance(check, dict)]
+            != expected_checks
+            or len(checks) != len(expected_checks)
+            or any(
+                not isinstance(check, dict)
+                or set(check) != {"name", "passed"}
+                or check.get("passed") is not True
+                for check in checks
+            )
+        ):
+            raise ValueError("Native core response must pass all required checks")
         expected_fields = {
             "initial_velocity_m_s",
             "acceleration_m_s2",
@@ -89,11 +126,17 @@ def _execute_native_kinematics(
             "displacement_m",
             "final_velocity_m_s",
         }
-        if not isinstance(payload, dict) or set(payload) != expected_fields:
-            raise ValueError("Native result must contain exactly the five motion fields")
-        if any(not isinstance(value, str) for value in payload.values()):
+        result_payload = payload.get("result")
+        if (
+            not isinstance(result_payload, dict)
+            or set(result_payload) != expected_fields
+        ):
+            raise ValueError(
+                "Native core result must contain exactly the five motion fields"
+            )
+        if any(not isinstance(value, str) for value in result_payload.values()):
             raise ValueError("Native motion result fields must be exact strings")
-        return KinematicsResult(**payload)
+        return KinematicsResult(**result_payload)
     except (json.JSONDecodeError, TypeError, ValueError) as error:
         raise NativeBackendError(
             f"Native kinematics capability returned invalid JSON: {error}"
@@ -212,7 +255,7 @@ def execute_plan(
             ),
             details=(
                 "Executed the configured native capability and cross-checked its exact result "
-                "against the canonical Python solver."
+                "against the canonical Python solver after validating the v1 core envelope."
                 if native_result is not None
                 else f"Executed the {request.numeric_mode.value} Python math backend."
             ),

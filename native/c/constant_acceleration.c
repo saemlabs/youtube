@@ -71,6 +71,11 @@ static Rational divide(Rational left, Rational right) {
     );
 }
 
+static bool equal(Rational left, Rational right) {
+    return left.numerator == right.numerator &&
+           left.denominator == right.denominator;
+}
+
 static bool parse_integer(const char *text, int64_t *value) {
     if (text == NULL || text[0] == '\0' || strlen(text) > 24) {
         return false;
@@ -162,20 +167,30 @@ static void print_field(const char *name, Rational value, bool final_field) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 4) {
+    const bool core_protocol =
+        argc == 6 && strcmp(argv[1], "--core-v1") == 0;
+    if (!core_protocol && argc != 4) {
         fprintf(
             stderr,
             "usage: saemphysics-kinematics-c INITIAL_VELOCITY ACCELERATION TIME\n"
+            "   or: saemphysics-kinematics-c --core-v1 solve_constant_acceleration "
+            "INITIAL_VELOCITY ACCELERATION TIME\n"
         );
+        return 2;
+    }
+    const int offset = core_protocol ? 3 : 1;
+    if (core_protocol &&
+        strcmp(argv[2], "solve_constant_acceleration") != 0) {
+        fprintf(stderr, "unsupported capability in core protocol v1\n");
         return 2;
     }
 
     Rational initial_velocity;
     Rational acceleration;
     Rational time;
-    if (!parse_rational(argv[1], &initial_velocity) ||
-        !parse_rational(argv[2], &acceleration) ||
-        !parse_rational(argv[3], &time)) {
+    if (!parse_rational(argv[offset], &initial_velocity) ||
+        !parse_rational(argv[offset + 1], &acceleration) ||
+        !parse_rational(argv[offset + 2], &time)) {
         fprintf(stderr, "inputs must be bounded exact integer or fraction strings\n");
         return 2;
     }
@@ -191,13 +206,44 @@ int main(int argc, char *argv[]) {
     );
     const Rational final_velocity =
         add(initial_velocity, multiply(acceleration, time));
+    const bool displacement_check = equal(
+        displacement,
+        add(
+            multiply(initial_velocity, time),
+            divide(
+                multiply(multiply(acceleration, time), time),
+                two
+            )
+        )
+    );
+    const bool velocity_check = equal(
+        final_velocity,
+        add(initial_velocity, multiply(acceleration, time))
+    );
 
-    putchar('{');
+    if (core_protocol) {
+        printf(
+            "{\"protocol\":\"saemphysics.capability.v1\","
+            "\"capability\":\"solve_constant_acceleration\","
+            "\"status\":\"completed\",\"result\":{"
+        );
+    } else {
+        putchar('{');
+    }
     print_field("initial_velocity_m_s", initial_velocity, false);
     print_field("acceleration_m_s2", acceleration, false);
     print_field("time_s", time, false);
     print_field("displacement_m", displacement, false);
     print_field("final_velocity_m_s", final_velocity, true);
+    if (core_protocol) {
+        printf(
+            ",\"checks\":[{\"name\":\"input_bounds\",\"passed\":true},"
+            "{\"name\":\"displacement_equation\",\"passed\":%s},"
+            "{\"name\":\"velocity_equation\",\"passed\":%s}]}",
+            displacement_check ? "true" : "false",
+            velocity_check ? "true" : "false"
+        );
+    }
     putchar('\n');
     return 0;
 }

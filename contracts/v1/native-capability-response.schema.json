@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "saemphysics.capability.v1.response",
+  "title": "SaemPhysics Native Capability Response v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol",
+    "capability",
+    "status",
+    "result",
+    "checks"
+  ],
+  "properties": {
+    "protocol": {
+      "const": "saemphysics.capability.v1"
+    },
+    "capability": {
+      "const": "solve_constant_acceleration"
+    },
+    "status": {
+      "const": "completed"
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "initial_velocity_m_s",
+        "acceleration_m_s2",
+        "time_s",
+        "displacement_m",
+        "final_velocity_m_s"
+      ],
+      "properties": {
+        "initial_velocity_m_s": {
+          "type": "string"
+        },
+        "acceleration_m_s2": {
+          "type": "string"
+        },
+        "time_s": {
+          "type": "string"
+        },
+        "displacement_m": {
+          "type": "string"
+        },
+        "final_velocity_m_s": {
+          "type": "string"
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/passedInputBounds"
+        },
+        {
+          "$ref": "#/$defs/passedDisplacementEquation"
+        },
+        {
+          "$ref": "#/$defs/passedVelocityEquation"
+        }
+      ],
+      "items": false
+    }
+  },
+  "$defs": {
+    "passedInputBounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "passed"],
+      "properties": {
+        "name": {
+          "const": "input_bounds"
+        },
+        "passed": {
+          "const": true
+        }
+      }
+    },
+    "passedDisplacementEquation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "passed"],
+      "properties": {
+        "name": {
+          "const": "displacement_equation"
+        },
+        "passed": {
+          "const": true
+        }
+      }
+    },
+    "passedVelocityEquation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "passed"],
+      "properties": {
+        "name": {
+          "const": "velocity_equation"
+        },
+        "passed": {
+          "const": true
+        }
+      }
+    }
+  }
+}

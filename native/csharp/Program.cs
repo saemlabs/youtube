@@ -56,6 +56,10 @@ internal readonly struct Rational
         );
     }
 
+    public static bool AreEqual(Rational left, Rational right) =>
+        left.Numerator == right.Numerator &&
+        left.Denominator == right.Denominator;
+
     public static bool IsIntegerText(string text)
     {
         if (text.Length == 0 || text.Length > 24)
@@ -110,21 +114,36 @@ internal readonly struct Rational
 
 internal static class Program
 {
+    private const string Protocol = "saemphysics.capability.v1";
+    private const string Capability = "solve_constant_acceleration";
+
     private static int Main(string[] args)
     {
-        if (args.Length != 3)
+        bool coreProtocol =
+            args.Length == 5 && args[0] == "--core-v1";
+        if (!coreProtocol && args.Length != 3)
         {
             Console.Error.WriteLine(
-                "usage: saemphysics-kinematics-csharp INITIAL_VELOCITY ACCELERATION TIME"
+                "usage: saemphysics-kinematics-csharp INITIAL_VELOCITY ACCELERATION TIME\n" +
+                "   or: saemphysics-kinematics-csharp --core-v1 " +
+                "solve_constant_acceleration INITIAL_VELOCITY ACCELERATION TIME"
+            );
+            return 2;
+        }
+        int offset = coreProtocol ? 2 : 0;
+        if (coreProtocol && args[1] != Capability)
+        {
+            Console.Error.WriteLine(
+                "unsupported capability in core protocol v1"
             );
             return 2;
         }
 
         try
         {
-            Rational initialVelocity = Rational.ParseBounded(args[0]);
-            Rational acceleration = Rational.ParseBounded(args[1]);
-            Rational time = Rational.ParseBounded(args[2]);
+            Rational initialVelocity = Rational.ParseBounded(args[offset]);
+            Rational acceleration = Rational.ParseBounded(args[offset + 1]);
+            Rational time = Rational.ParseBounded(args[offset + 2]);
             if (time.Numerator.Sign < 0)
             {
                 throw new ArgumentException("time_s must be non-negative");
@@ -134,10 +153,28 @@ internal static class Program
                 initialVelocity * time +
                 (acceleration * time * time) / new Rational(2, 1);
             Rational finalVelocity = initialVelocity + acceleration * time;
-
-            Console.WriteLine(
-                $$"""{"initial_velocity_m_s":"{{initialVelocity}}","acceleration_m_s2":"{{acceleration}}","time_s":"{{time}}","displacement_m":"{{displacement}}","final_velocity_m_s":"{{finalVelocity}}"}"""
+            bool displacementCheck = Rational.AreEqual(
+                displacement,
+                initialVelocity * time +
+                    (acceleration * time * time) / new Rational(2, 1)
             );
+            bool velocityCheck = Rational.AreEqual(
+                finalVelocity,
+                initialVelocity + acceleration * time
+            );
+
+            if (coreProtocol)
+            {
+                Console.WriteLine(
+                    $$"""{"protocol":"{{Protocol}}","capability":"{{Capability}}","status":"completed","result":{"initial_velocity_m_s":"{{initialVelocity}}","acceleration_m_s2":"{{acceleration}}","time_s":"{{time}}","displacement_m":"{{displacement}}","final_velocity_m_s":"{{finalVelocity}}"},"checks":[{"name":"input_bounds","passed":true},{"name":"displacement_equation","passed":{{displacementCheck.ToString(CultureInfo.InvariantCulture).ToLowerInvariant()}}},{"name":"velocity_equation","passed":{{velocityCheck.ToString(CultureInfo.InvariantCulture).ToLowerInvariant()}}}]}"""
+                );
+            }
+            else
+            {
+                Console.WriteLine(
+                    $$"""{"initial_velocity_m_s":"{{initialVelocity}}","acceleration_m_s2":"{{acceleration}}","time_s":"{{time}}","displacement_m":"{{displacement}}","final_velocity_m_s":"{{finalVelocity}}"}"""
+                );
+            }
             return 0;
         }
         catch (ArgumentException error)

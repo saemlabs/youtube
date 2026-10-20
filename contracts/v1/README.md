@@ -28,6 +28,16 @@ Python verification and trace behavior. The native capability remains opt-in
 rather than the default backend and does not implement the complete
 `StudentResponse`, verification report, or runtime trace.
 
+The versioned native capability output envelope is specified in
+[`native-capability-response.schema.json`](./native-capability-response.schema.json).
+It is intentionally narrower than the frontend contract: Python validates the
+whole `StudentRequest`, routes intent and corpus workflows, validates this
+capability envelope, cross-checks the exact result, performs canonical
+verification, and assembles the final response and ordered trace. The current
+native command protocol accepts only
+`--core-v1 solve_constant_acceleration INITIAL_VELOCITY ACCELERATION TIME`;
+other operations fail explicitly instead of being treated as successful work.
+
 The C and C++ implementations require GCC or Clang-compatible 128-bit integer
 extensions; the C++ source requires C++17 and the C source requires C11. The C#
 implementation targets .NET 10 and uses `BigInteger`. All three bound each

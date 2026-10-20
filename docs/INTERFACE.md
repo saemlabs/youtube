@@ -30,6 +30,35 @@ Every native result is cross-checked exactly against Python before use;
 failures are surfaced explicitly and never trigger silent fallback. The option
 supports only constant-acceleration solve requests. Python remains the default.
 
+## Core processing boundary
+
+The frontend submits a `StudentRequest` JSON contract-v1 request to Python's shared
+`process_student_request` router. Python validates the whole request, checks
+corpus/provenance and intent rules, compiles the calculation into the common
+plan, and dispatches only a typed, bounded capability. For an explicitly
+selected native backend, the process invocation is:
+
+```text
+EXECUTABLE --core-v1 solve_constant_acceleration INITIAL_VELOCITY ACCELERATION TIME
+```
+
+Numeric inputs are exact integer/fraction strings. The native process returns
+the strict JSON envelope defined by
+[`native-capability-response.schema.json`](../contracts/v1/native-capability-response.schema.json):
+protocol, capability, completion status, the exact result, and ordered
+capability checks. Python rejects protocol drift or failed checks, compares the
+result with its canonical exact solver, runs its verification checks, and
+assembles the final `StudentResponse` and trace for the frontend. Unknown
+capabilities, malformed outputs, nonzero exits, timeouts, and result
+mismatches fail explicitly; native code does not receive arbitrary source,
+commands, or unvalidated request JSON.
+
+This is one complete solve vertical slice, not a general native orchestrator.
+Practice, grading, lesson generation, calculus, and linear algebra continue
+through the capabilities currently registered by the canonical Python router.
+Add a capability by defining its typed inputs, output/check schema, bounds,
+shared vectors, implementation, and frontend routing before enabling it.
+
 The interactive browser workbench uses the same central router through a
 local-only HTTP adapter:
 

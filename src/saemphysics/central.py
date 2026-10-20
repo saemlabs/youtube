@@ -145,7 +145,7 @@ def process_student_request(
     """Route a student request through verified, explicitly supported workflows."""
     if native_kinematics_executable is not None and request.intent != "solve":
         raise ValueError(
-            "The configured native C++ backend can be used only for solve requests"
+            "The configured native backend can be used only for solve requests"
         )
     if request.intent in {"start_test", "submit_test"}:
         if question_resolver is None:
@@ -268,7 +268,7 @@ def process_student_request(
             and request.calculation.operation != "solve_constant_acceleration"
         ):
             raise ValueError(
-                "The configured native C++ backend supports only constant acceleration"
+                "The configured native backend supports only constant acceleration"
             )
         execution = execute_plan(
             compile_request(request.calculation),

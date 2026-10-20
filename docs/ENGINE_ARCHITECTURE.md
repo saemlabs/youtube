@@ -61,6 +61,16 @@ timeout, or process failure is an explicit error; there is no silent fallback.
 The native programs still do not implement the complete `StudentResponse`,
 verification, or trace contract themselves, and Python remains authoritative.
 
+The capability-level response envelope is versioned at
+[`contracts/v1/native-capability-response.schema.json`](../contracts/v1/native-capability-response.schema.json).
+At the application boundary, Python remains the coordinator: it validates the
+complete student request, compiles a capability plan, invokes the native
+operation only when configured, validates the envelope, independently
+cross-checks the exact result and verification, and emits the canonical
+student-facing response and trace. This composes small native mechanisms
+without duplicating corpus, lesson, grading, or human-review policies in three
+languages.
+
 This is a deliberately narrow engineering step informed by the uploaded
 programming, computation, calculus, and mechanics references: keep one logical
 capability contract independent of its implementation language, make exact

@@ -158,22 +158,44 @@ def _motion_vectors():
     ]
 
 
+def _core_command(executable, calculation):
+    return [
+        str(executable),
+        "--core-v1",
+        "solve_constant_acceleration",
+        calculation["initial_velocity_m_s"],
+        calculation["acceleration_m_s2"],
+        calculation["time_s"],
+    ]
+
+
+def _assert_core_response(stdout, expected_result):
+    response = json.loads(stdout)
+    assert response["protocol"] == "saemphysics.capability.v1"
+    assert response["capability"] == "solve_constant_acceleration"
+    assert response["status"] == "completed"
+    assert response["result"] == expected_result
+    assert response["checks"] == [
+        {"name": "input_bounds", "passed": True},
+        {"name": "displacement_equation", "passed": True},
+        {"name": "velocity_equation", "passed": True},
+    ]
+
+
 def test_cpp_constant_acceleration_matches_all_shared_vectors(native_solver):
     assert len(_motion_vectors()) >= 4
     for vector in _motion_vectors():
         calculation = vector["request"]["calculation"]
         result = subprocess.run(
-            [
-                str(native_solver),
-                calculation["initial_velocity_m_s"],
-                calculation["acceleration_m_s2"],
-                calculation["time_s"],
-            ],
+            _core_command(native_solver, calculation),
             check=True,
             capture_output=True,
             text=True,
         )
-        assert json.loads(result.stdout) == vector["expected"]["artifact"]["result"]
+        _assert_core_response(
+            result.stdout,
+            vector["expected"]["artifact"]["result"],
+        )
 
 
 def test_cpp_native_capability_routes_through_central_processor(native_solver):
@@ -195,17 +217,15 @@ def test_c_constant_acceleration_matches_all_shared_vectors(native_c_solver):
     for vector in _motion_vectors():
         calculation = vector["request"]["calculation"]
         result = subprocess.run(
-            [
-                str(native_c_solver),
-                calculation["initial_velocity_m_s"],
-                calculation["acceleration_m_s2"],
-                calculation["time_s"],
-            ],
+            _core_command(native_c_solver, calculation),
             check=True,
             capture_output=True,
             text=True,
         )
-        assert json.loads(result.stdout) == vector["expected"]["artifact"]["result"]
+        _assert_core_response(
+            result.stdout,
+            vector["expected"]["artifact"]["result"],
+        )
 
 
 def test_c_native_capability_routes_through_central_processor(native_c_solver):
@@ -228,17 +248,15 @@ def test_csharp_constant_acceleration_matches_all_shared_vectors(
     for vector in _motion_vectors():
         calculation = vector["request"]["calculation"]
         result = subprocess.run(
-            [
-                str(native_csharp_solver),
-                calculation["initial_velocity_m_s"],
-                calculation["acceleration_m_s2"],
-                calculation["time_s"],
-            ],
+            _core_command(native_csharp_solver, calculation),
             check=True,
             capture_output=True,
             text=True,
         )
-        assert json.loads(result.stdout) == vector["expected"]["artifact"]["result"]
+        _assert_core_response(
+            result.stdout,
+            vector["expected"]["artifact"]["result"],
+        )
 
 
 def test_csharp_native_capability_routes_through_central_processor(
@@ -262,9 +280,14 @@ def test_cpp_native_capability_fails_closed_on_result_mismatch(tmp_path):
     wrong_backend.write_text(
         "#!/bin/sh\n"
         "printf '%s\\n' "
-        "'{\"initial_velocity_m_s\":\"3\",\"acceleration_m_s2\":\"2\","
+        "'{\"protocol\":\"saemphysics.capability.v1\","
+        "\"capability\":\"solve_constant_acceleration\",\"status\":\"completed\","
+        "\"result\":{\"initial_velocity_m_s\":\"3\",\"acceleration_m_s2\":\"2\","
         "\"time_s\":\"4\",\"displacement_m\":\"999\","
-        "\"final_velocity_m_s\":\"11\"}'\n",
+        "\"final_velocity_m_s\":\"11\"},\"checks\":["
+        "{\"name\":\"input_bounds\",\"passed\":true},"
+        "{\"name\":\"displacement_equation\",\"passed\":true},"
+        "{\"name\":\"velocity_equation\",\"passed\":true}]}'\n",
         encoding="utf-8",
     )
     wrong_backend.chmod(0o755)
@@ -285,6 +308,42 @@ def test_cpp_native_capability_fails_closed_on_result_mismatch(tmp_path):
         process_student_request(
             request,
             native_kinematics_executable=str(wrong_backend),
+        )
+
+
+def test_native_capability_fails_closed_on_failed_core_check(tmp_path):
+    failed_backend = tmp_path / "failed-native-check"
+    failed_backend.write_text(
+        "#!/bin/sh\n"
+        "printf '%s\\n' "
+        "'{\"protocol\":\"saemphysics.capability.v1\","
+        "\"capability\":\"solve_constant_acceleration\",\"status\":\"completed\","
+        "\"result\":{\"initial_velocity_m_s\":\"3\",\"acceleration_m_s2\":\"2\","
+        "\"time_s\":\"4\",\"displacement_m\":\"28\","
+        "\"final_velocity_m_s\":\"11\"},\"checks\":["
+        "{\"name\":\"input_bounds\",\"passed\":true},"
+        "{\"name\":\"displacement_equation\",\"passed\":false},"
+        "{\"name\":\"velocity_equation\",\"passed\":true}]}'\n",
+        encoding="utf-8",
+    )
+    failed_backend.chmod(0o755)
+    request = StudentRequest.model_validate(
+        {
+            "intent": "solve",
+            "calculation": {
+                "operation": "solve_constant_acceleration",
+                "question_id": "native-failed-check",
+                "initial_velocity_m_s": "3",
+                "acceleration_m_s2": "2",
+                "time_s": "4",
+            },
+        }
+    )
+
+    with pytest.raises(NativeBackendError, match="must pass all required checks"):
+        process_student_request(
+            request,
+            native_kinematics_executable=str(failed_backend),
         )
 
 
@@ -359,9 +418,14 @@ def test_web_api_returns_explicit_error_for_native_mismatch(
     wrong_backend.write_text(
         "#!/bin/sh\n"
         "printf '%s\\n' "
-        "'{\"initial_velocity_m_s\":\"3\",\"acceleration_m_s2\":\"2\","
+        "'{\"protocol\":\"saemphysics.capability.v1\","
+        "\"capability\":\"solve_constant_acceleration\",\"status\":\"completed\","
+        "\"result\":{\"initial_velocity_m_s\":\"3\",\"acceleration_m_s2\":\"2\","
         "\"time_s\":\"4\",\"displacement_m\":\"999\","
-        "\"final_velocity_m_s\":\"11\"}'\n",
+        "\"final_velocity_m_s\":\"11\"},\"checks\":["
+        "{\"name\":\"input_bounds\",\"passed\":true},"
+        "{\"name\":\"displacement_equation\",\"passed\":true},"
+        "{\"name\":\"velocity_equation\",\"passed\":true}]}'\n",
         encoding="utf-8",
     )
     wrong_backend.chmod(0o755)
@@ -411,7 +475,7 @@ def test_cpp_native_backend_rejects_non_solve_requests(native_solver):
 def test_native_backend_rejects_negative_time(backend, request):
     solver = request.getfixturevalue(f"native_{backend}_solver")
     result = subprocess.run(
-        [str(solver), "3", "2", "-1"],
+        [str(solver), "--core-v1", "solve_constant_acceleration", "3", "2", "-1"],
         check=False,
         capture_output=True,
         text=True,
@@ -426,7 +490,7 @@ def test_native_backend_rejects_negative_time(backend, request):
 def test_native_backend_rejects_inexact_input(backend, request):
     solver = request.getfixturevalue(f"native_{backend}_solver")
     result = subprocess.run(
-        [str(solver), "3.5", "2", "1"],
+        [str(solver), "--core-v1", "solve_constant_acceleration", "3.5", "2", "1"],
         check=False,
         capture_output=True,
         text=True,
@@ -435,6 +499,34 @@ def test_native_backend_rejects_inexact_input(backend, request):
     assert result.returncode == 2
     assert result.stdout == ""
     assert "exact integer or fraction strings" in result.stderr
+
+
+@pytest.mark.parametrize("backend", ["cpp", "c", "csharp"])
+def test_native_core_rejects_unsupported_operation(backend, request):
+    solver = request.getfixturevalue(
+        {
+            "cpp": "native_solver",
+            "c": "native_c_solver",
+            "csharp": "native_csharp_solver",
+        }[backend]
+    )
+    result = subprocess.run(
+        [
+            str(solver),
+            "--core-v1",
+            "differentiate",
+            "3",
+            "2",
+            "1",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "unsupported capability" in result.stderr
 
 
 @pytest.mark.parametrize(
@@ -452,6 +544,8 @@ def test_cpp_rejects_applicable_invalid_contract_vectors(native_solver, vector):
     result = subprocess.run(
         [
             str(native_solver),
+            "--core-v1",
+            "solve_constant_acceleration",
             calculation["initial_velocity_m_s"],
             calculation["acceleration_m_s2"],
             calculation["time_s"],
@@ -481,7 +575,14 @@ def test_cpp_constant_acceleration_rejects_unsupported_inputs(
     message,
 ):
     result = subprocess.run(
-        [str(native_solver), initial_velocity, acceleration, time],
+        [
+            str(native_solver),
+            "--core-v1",
+            "solve_constant_acceleration",
+            initial_velocity,
+            acceleration,
+            time,
+        ],
         check=False,
         capture_output=True,
         text=True,
