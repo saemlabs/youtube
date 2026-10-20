@@ -114,3 +114,86 @@ def test_runtime_rejects_modified_machine_ir():
 
     with pytest.raises(ValueError, match="Machine IR does not match"):
         execute_plan(altered_plan)
+
+
+@pytest.mark.parametrize(
+    ("request_fields", "expected_result", "expected_value"),
+    [
+        (
+            {
+                "operation": "differentiate",
+                "expression": "2 + 3*t",
+                "variable": "t",
+            },
+            "derivative",
+            "3",
+        ),
+        (
+            {
+                "operation": "definite_integral",
+                "expression": "2 + 3*t",
+                "variable": "t",
+                "lower_bound": "0",
+                "upper_bound": "4",
+            },
+            "value",
+            "32",
+        ),
+        (
+            {
+                "operation": "solve_linear_system",
+                "coefficients": [["2", "1"], ["1", "-1"]],
+                "right_hand_side": ["5", "1"],
+            },
+            "solution",
+            ("2", "1"),
+        ),
+    ],
+)
+def test_calculus_and_linear_algebra_execute_through_all_ir_layers(
+    request_fields,
+    expected_result,
+    expected_value,
+):
+    request = SemanticIR(
+        question_id="math_pipeline_demo",
+        **request_fields,
+    )
+
+    plan = compile_request(request)
+    result = execute_plan(plan)
+
+    assert getattr(result.result, expected_result) == expected_value
+    assert result.verification.status == "passed"
+    assert result.verification.checks
+    assert all(check.passed for check in result.verification.checks)
+    assert [event.layer for event in result.trace] == [
+        "semantic_ir",
+        "execution_ir",
+        "machine_ir",
+        "runtime",
+        "verification",
+    ]
+    assert result.trace[-2].event == request.operation
+
+
+@pytest.mark.parametrize(
+    "request_fields",
+    [
+        {"operation": "differentiate"},
+        {"operation": "differentiate", "expression": "x", "time_s": "1"},
+        {
+            "operation": "definite_integral",
+            "expression": "x",
+            "lower_bound": "0",
+        },
+        {
+            "operation": "solve_linear_system",
+            "coefficients": [["1", "2"]],
+            "right_hand_side": ["1"],
+        },
+    ],
+)
+def test_semantic_ir_rejects_incomplete_or_mixed_math_requests(request_fields):
+    with pytest.raises(ValidationError):
+        SemanticIR(question_id="invalid_math_request", **request_fields)

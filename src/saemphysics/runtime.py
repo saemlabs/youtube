@@ -2,10 +2,17 @@ from dataclasses import dataclass
 
 from saemphysics.ir import (
     CompiledPlan,
-    ExecutionStep,
-    MachineInstruction,
     compile_request,
 )
+from saemphysics.maths import (
+    DefiniteIntegralResult,
+    DerivativeResult,
+    LinearSystemResult,
+    definite_integral,
+    differentiate,
+    solve_linear_system,
+)
+from saemphysics.maths.verification import MathCheck
 from saemphysics.solvers.mechanics import (
     KinematicsResult,
     VerificationReport,
@@ -22,10 +29,58 @@ class TraceEvent:
 
 
 @dataclass(frozen=True)
+class MathVerificationReport:
+    status: str
+    checks: tuple[MathCheck, ...]
+
+
+@dataclass(frozen=True)
 class RuntimeResult:
-    result: KinematicsResult
-    verification: VerificationReport
+    question_id: str
+    result: (
+        KinematicsResult
+        | DerivativeResult
+        | DefiniteIntegralResult
+        | LinearSystemResult
+    )
+    verification: VerificationReport | MathVerificationReport
     trace: tuple[TraceEvent, ...]
+
+
+def _execute_math_request(plan: CompiledPlan):
+    request = plan.semantic_ir
+    if request.operation == "differentiate":
+        if request.expression is None:
+            raise ValueError("Differentiation request is missing its expression")
+        result = differentiate(request.expression, request.variable)
+    elif request.operation == "definite_integral":
+        if (
+            request.expression is None
+            or request.lower_bound is None
+            or request.upper_bound is None
+        ):
+            raise ValueError("Definite-integral request is missing required inputs")
+        result = definite_integral(
+            request.expression,
+            request.lower_bound,
+            request.upper_bound,
+            request.variable,
+        )
+    elif request.operation == "solve_linear_system":
+        if request.coefficients is None or request.right_hand_side is None:
+            raise ValueError("Linear-system request is missing required inputs")
+        result = solve_linear_system(
+            request.coefficients,
+            request.right_hand_side,
+        )
+    else:
+        raise ValueError(f"Unsupported mathematics operation: {request.operation}")
+
+    verification = MathVerificationReport(
+        status="passed" if all(check.passed for check in result.checks) else "failed",
+        checks=result.checks,
+    )
+    return result, verification
 
 
 def execute_plan(plan: CompiledPlan) -> RuntimeResult:
@@ -35,16 +90,6 @@ def execute_plan(plan: CompiledPlan) -> RuntimeResult:
         raise ValueError("Execution IR does not match the semantic request")
     if plan.machine_ir != expected.machine_ir:
         raise ValueError("Machine IR does not match the execution plan")
-
-    instructions = plan.machine_ir.instructions
-    required = (
-        MachineInstruction.VALIDATE_RATIONAL_INPUTS,
-        MachineInstruction.CALL_KINEMATICS_SOLVER,
-        MachineInstruction.CALL_EQUATION_VERIFIER,
-        MachineInstruction.RETURN_VERIFIED_RESULT,
-    )
-    if instructions != required:
-        raise ValueError("Machine IR contains an unsupported instruction sequence")
 
     request = plan.semantic_ir
     trace = [
@@ -68,30 +113,46 @@ def execute_plan(plan: CompiledPlan) -> RuntimeResult:
         ),
     ]
 
-    result = solve_constant_acceleration(
-        request.initial_velocity_m_s,
-        request.acceleration_m_s2,
-        request.time_s,
-    )
+    if request.operation == "solve_constant_acceleration":
+        if (
+            request.initial_velocity_m_s is None
+            or request.acceleration_m_s2 is None
+            or request.time_s is None
+        ):
+            raise ValueError("Motion request is missing required inputs")
+        result = solve_constant_acceleration(
+            request.initial_velocity_m_s,
+            request.acceleration_m_s2,
+            request.time_s,
+        )
+        verification: VerificationReport | MathVerificationReport = (
+            verify_constant_acceleration(result)
+        )
+    else:
+        result, verification = _execute_math_request(plan)
+
     trace.append(
         TraceEvent(
             layer="runtime",
-            event=ExecutionStep.SOLVE_CONSTANT_ACCELERATION.value,
-            details="Executed the deterministic SymPy-backed solver.",
+            event=request.operation,
+            details=f"Executed the {request.numeric_mode.value} Python math backend.",
         )
     )
-    verification = verify_constant_acceleration(result)
     trace.append(
         TraceEvent(
             layer="verification",
             event=verification.status,
-            details=f"{len(verification.checks)} verification checks",
+            details=(
+                f"{len(verification.checks)} verification checks: "
+                + ", ".join(check.name for check in verification.checks)
+            ),
         )
     )
     if verification.status != "passed":
         raise RuntimeError("Solver result failed independent verification")
 
     return RuntimeResult(
+        question_id=request.question_id,
         result=result,
         verification=verification,
         trace=tuple(trace),

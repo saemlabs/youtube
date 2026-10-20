@@ -1,0 +1,130 @@
+import json
+
+from saemphysics.cli import main
+
+
+def test_cli_runs_and_serializes_a_verified_request(tmp_path, capsys):
+    request_path = tmp_path / "request.json"
+    request_path.write_text(
+        json.dumps(
+            {
+                "operation": "differentiate",
+                "question_id": "cli-derivative",
+                "expression": "x**3",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["run", str(request_path)]) == 0
+
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert captured.err == ""
+    assert result["question_id"] == "cli-derivative"
+    assert result["result"]["derivative"] == "3*x**2"
+    assert result["verification"]["status"] == "passed"
+    assert [event["layer"] for event in result["trace"]] == [
+        "semantic_ir",
+        "execution_ir",
+        "machine_ir",
+        "runtime",
+        "verification",
+    ]
+
+
+def test_cli_reports_invalid_request_without_success_output(tmp_path, capsys):
+    request_path = tmp_path / "request.json"
+    request_path.write_text('{"operation":"unknown","question_id":"bad"}', encoding="utf-8")
+
+    assert main(["run", str(request_path)]) == 2
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "saemphysics:" in captured.err
+
+
+def test_cli_validates_canonical_question_record(tmp_path, capsys):
+    question_path = tmp_path / "question.json"
+    question_path.write_text(
+        json.dumps(
+            {
+                "question_id": "synthetic-demo-001",
+                "exam": "SaemPhysics synthetic demo",
+                "year": 2026,
+                "subject": "physics",
+                "topic": "mechanics",
+                "source": {
+                    "document_id": "saemphysics-synthetic-demo",
+                    "rights_status": "original",
+                },
+                "question_text": (
+                    "A cart moves at 3 m/s and accelerates at 2 m/s^2 "
+                    "for 4 s. Find its displacement."
+                ),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["validate-question", str(question_path)]) == 0
+
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    assert json.loads(captured.out) == {
+        "valid": True,
+        "question_id": "synthetic-demo-001",
+        "rights_status": "original",
+        "solution_status": "not_solved",
+        "human_verified": False,
+    }
+
+
+def test_cli_rejects_question_without_source_provenance(tmp_path, capsys):
+    question_path = tmp_path / "question.json"
+    question_path.write_text(
+        json.dumps(
+            {
+                "question_id": "missing-source",
+                "exam": "Unknown",
+                "year": 2026,
+                "subject": "physics",
+                "topic": "mechanics",
+                "question_text": "A synthetic test question.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["validate-question", str(question_path)]) == 2
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "source" in captured.err
+
+
+def test_cli_interactive_interface_routes_student_request(tmp_path, capsys):
+    request_path = tmp_path / "student-request.json"
+    request_path.write_text(
+        json.dumps(
+            {
+                "intent": "solve",
+                "calculation": {
+                    "operation": "differentiate",
+                    "question_id": "cli-student",
+                    "expression": "x**2",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert main(["interact", str(request_path)]) == 0
+
+    captured = capsys.readouterr()
+    response = json.loads(captured.out)
+    assert captured.err == ""
+    assert response["intent"] == "solve"
+    assert response["status"] == "completed"
+    assert response["artifact"]["result"]["derivative"] == "2*x"
+    assert response["verification"]["status"] == "passed"

@@ -52,10 +52,13 @@ def _build_expression(node: ast.AST) -> sp.Expr:
         operation = _BINARY_OPERATORS.get(type(node.op))
         if operation is None:
             raise ValueError("Only +, -, *, /, and ** operators are supported")
-        return operation(
-            _build_expression(node.left),
-            _build_expression(node.right),
-        )
+        left = _build_expression(node.left)
+        right = _build_expression(node.right)
+        if isinstance(node.op, ast.Pow) and (
+            right.is_Integer is not True or abs(int(right)) > 32
+        ):
+            raise ValueError("Exponents must be integers between -32 and 32")
+        return operation(left, right)
 
     if isinstance(node, ast.UnaryOp):
         operation = _UNARY_OPERATORS.get(type(node.op))

@@ -1,0 +1,161 @@
+import pytest
+from pydantic import ValidationError
+
+from saemphysics.central import StudentRequest, process_student_request
+from saemphysics.ir import SemanticIR
+from saemphysics.lesson import SceneRole
+from saemphysics.models import (
+    AnswerOption,
+    QuestionRecord,
+    RightsStatus,
+    SolutionArtifact,
+    SolutionStatus,
+    SourceRecord,
+    VerificationCheck,
+)
+
+
+def make_question(*, verified=False, official_answer="B"):
+    solution = SolutionArtifact()
+    if verified:
+        solution = SolutionArtifact(
+            status=SolutionStatus.VERIFIED,
+            assumptions=["Acceleration is constant."],
+            derivation_steps=[
+                "Use s = ut + 1/2 at^2.",
+                "Substitute the given values to obtain 28 m.",
+            ],
+            symbolic_result="s = ut + 1/2 at^2",
+            numerical_result="28",
+            units="m",
+            verification_checks=[
+                VerificationCheck(
+                    name="displacement_equation",
+                    passed=True,
+                    details="The equation residual is zero.",
+                )
+            ],
+        )
+    return QuestionRecord(
+        question_id="central-cart-question",
+        exam="Synthetic demo",
+        year=2026,
+        subject="physics",
+        topic="mechanics",
+        source=SourceRecord(
+            document_id="synthetic-central-demo",
+            page=1,
+            rights_status=RightsStatus.ORIGINAL,
+        ),
+        question_text="A cart moves under constant acceleration. Find its displacement.",
+        options=[
+            AnswerOption(key="A", text="20 m"),
+            AnswerOption(key="B", text="28 m"),
+        ],
+        official_answer=official_answer,
+        solution=solution,
+    )
+
+
+def test_central_solve_routes_calculation_to_verified_runtime():
+    question = make_question()
+    request = StudentRequest(
+        intent="solve",
+        question=question,
+        calculation=SemanticIR(
+            operation="solve_constant_acceleration",
+            question_id=question.question_id,
+            initial_velocity_m_s="3",
+            acceleration_m_s2="2",
+            time_s="4",
+        ),
+    )
+
+    response = process_student_request(request)
+
+    assert response.status == "completed"
+    assert response.artifact["result"]["displacement_m"] == "28"
+    assert response.verification["status"] == "passed"
+    assert len(response.trace) == 5
+
+
+def test_central_rejects_calculation_for_a_different_question():
+    with pytest.raises(ValidationError, match="IDs must match"):
+        StudentRequest(
+            intent="solve",
+            question=make_question(),
+            calculation=SemanticIR(
+                operation="differentiate",
+                question_id="other-question",
+                expression="x**2",
+            ),
+        )
+
+
+def test_practice_hides_answer_key_until_submission():
+    question = make_question()
+    response = process_student_request(
+        StudentRequest(intent="practice", question=question)
+    )
+
+    assert response.status == "ready"
+    assert response.artifact["question_id"] == question.question_id
+    assert "official_answer" not in response.artifact
+    assert "correct_option" not in response.artifact
+
+
+def test_submission_grades_against_key_and_reveals_only_verified_work():
+    question = make_question(verified=True)
+    response = process_student_request(
+        StudentRequest(
+            intent="submit_answer",
+            question=question,
+            selected_option="B",
+        )
+    )
+
+    assert response.status == "correct"
+    assert response.artifact["correct_option"] == "B"
+    assert len(response.artifact["derivation_steps"]) == 2
+
+
+def test_submission_without_official_key_is_blocked_not_guessed():
+    question = make_question(official_answer=None)
+    response = process_student_request(
+        StudentRequest(
+            intent="submit_answer",
+            question=question,
+            selected_option="A",
+        )
+    )
+
+    assert response.status == "blocked"
+    assert response.artifact is None
+    assert "official answer key" in response.message
+
+
+def test_explanation_waits_for_passing_solution_evidence():
+    pending = process_student_request(
+        StudentRequest(intent="explain", question=make_question())
+    )
+    verified = process_student_request(
+        StudentRequest(intent="explain", question=make_question(verified=True))
+    )
+
+    assert pending.status == "blocked"
+    assert verified.status == "draft"
+    assert verified.artifact["derivation_steps"]
+    assert verified.verification["status"] == "passed"
+
+
+def test_lesson_intent_returns_plan_without_claiming_video_or_publication():
+    response = process_student_request(
+        StudentRequest(intent="make_lesson", question=make_question(verified=True))
+    )
+    lesson = response.artifact["lesson"]
+
+    assert response.status == "draft"
+    assert lesson["scenes"][0]["role"] == SceneRole.CENTRAL_QUESTION.value
+    assert lesson["scenes"][-1]["role"] == SceneRole.RECAP.value
+    assert response.artifact["publication"]["publishable"] is False
+    assert "does not render" in response.message

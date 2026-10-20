@@ -12,6 +12,9 @@ dependencies = [
     "sympy>=1.12,<2",
 ]
 
+[project.scripts]
+saemphysics = "saemphysics.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8,<9",

@@ -3,13 +3,11 @@
 from saemphysics.models import (
     QuestionRecord,
     RightsStatus,
-    SolutionArtifact,
-    SolutionStatus,
     SourceRecord,
-    VerificationCheck,
 )
 from saemphysics.ir import SemanticIR, compile_request
 from saemphysics.lesson import LessonAudience, compile_lesson
+from saemphysics.pipeline import attach_verified_solution
 from saemphysics.runtime import execute_plan
 from saemphysics.verification import publication_decision
 
@@ -60,31 +58,14 @@ def main() -> None:
     runtime_result = execute_plan(compile_request(semantic_ir))
     result = runtime_result.result
     report = runtime_result.verification
-    question = question.model_copy(
-        update={
-            "solution": SolutionArtifact(
-                status=SolutionStatus.VERIFIED,
-                assumptions=["Motion is one-dimensional with constant acceleration."],
-                derivation_steps=[
-                    "Displacement: s = ut + 1/2 at^2 = 32 m.",
-                    "Final velocity: v = u + at = 14 m/s.",
-                ],
-                symbolic_result="s = ut + 1/2 at^2; v = u + at",
-                numerical_result=(
-                    f"displacement={result.displacement_m} m; "
-                    f"final_velocity={result.final_velocity_m_s} m/s"
-                ),
-                units="m, m/s",
-                verification_checks=[
-                    VerificationCheck(
-                        name=check.name,
-                        passed=check.passed,
-                        details=check.details,
-                    )
-                    for check in report.checks
-                ],
-            )
-        }
+    question = attach_verified_solution(
+        question,
+        runtime_result,
+        assumptions=["Motion is one-dimensional with constant acceleration."],
+        derivation_steps=[
+            "Displacement: s = ut + 1/2 at^2 = 32 m.",
+            "Final velocity: v = u + at = 14 m/s.",
+        ],
     )
 
     decision = publication_decision(question)

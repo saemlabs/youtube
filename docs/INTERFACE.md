@@ -1,0 +1,115 @@
+# Student-to-teacher interface
+
+The current central processing entry point is `process_student_request` in
+`src/saemphysics/central.py`. It accepts one validated `StudentRequest` and
+returns a structured `StudentResponse`. The CLI exposes the same contract:
+
+```bash
+saemphysics interact examples/requests/student_solve.json
+saemphysics interact -
+```
+
+The interface is deliberately a small router over registered capabilities.
+It is not a general AI agent, does not run arbitrary submitted code, and does
+not claim that unavailable capabilities have been completed.
+
+## Request shape
+
+Every request has an `intent`. The model rejects fields that do not belong to
+that intent.
+
+### Solve
+
+```json
+{
+  "intent": "solve",
+  "calculation": {
+    "operation": "differentiate",
+    "question_id": "student-question-001",
+    "expression": "x**2"
+  }
+}
+```
+
+Supported calculations are the exact operations accepted by Semantic IR:
+constant-acceleration motion, differentiation, definite integration, and exact
+square linear-system solving. Unsupported or approximate operations fail
+explicitly. The response contains the typed result, verification checks, and
+execution trace.
+
+### Practice and answer submission
+
+```json
+{
+  "intent": "practice",
+  "question": {
+    "...": "a complete canonical QuestionRecord"
+  }
+}
+```
+
+Practice returns the question and available choices without exposing the
+answer key. The student then submits an option:
+
+```json
+{
+  "intent": "submit_answer",
+  "question": {
+    "...": "the same complete canonical QuestionRecord"
+  },
+  "selected_option": "B"
+}
+```
+
+Grading is currently single-question and stateless. It uses the recorded
+official answer only when that answer matches one of the stored option keys.
+It does not invent an answer or persist scores. After submission, verified
+solution steps may be returned; an unverified explanation remains unavailable.
+
+### Explain and make a lesson
+
+`explain` assembles stored assumptions, derivation, result, and passing checks
+only when the question solution is marked verified. The explanation remains a
+draft for teaching review.
+
+`make_lesson` compiles the existing renderer-independent lesson artifact from
+that verified record. It does not call an AI provider, render a video, or
+publish anything. Lesson and question review plus source rights remain
+separate gates.
+
+## Response envelope
+
+Responses contain:
+
+- `intent`: the requested action.
+- `status`: `completed`, `ready`, `draft`, `correct`, `incorrect`, or `blocked`.
+- `message`: what happened, without claiming unsupported work.
+- `artifact`: result, question, explanation, or lesson data when available.
+- `verification`: explicit checks when computation or a stored solution supports it.
+- `trace`: runtime layers for computation requests.
+- `next_action`: a concrete review or follow-up step when needed.
+
+## Growth path
+
+Keep this outer request/response envelope stable as capabilities expand. Add
+new intents only when their typed inputs, outputs, safety/rights constraints,
+and tests exist. The roadmap stages ingestion, concept mapping, lesson review,
+rendering, and learner-facing persistence separately; a future web/API layer
+can call this same central function instead of duplicating business rules.
+
+## Design references
+
+- Feynman's computation material motivates making each processing layer and
+  trace inspectable rather than hiding work in one opaque step:
+  [`Feynmann computation.PDF`](./computing/Feynmann%20computation.PDF).
+- SICP motivates keeping the interface, request interpretation, execution,
+  and output as composable parts rather than one monolithic routine:
+  [`Book 2 SICP.PDF`](./computing/Book%202%20SICP.PDF).
+- Strang's computational science and calculus materials inform keeping
+  mathematical objects and verified operations explicit:
+  [Computational Science and Engineering](./computing/Gilbert%20Strang%20MIT%20Computational%20Science%20and%20Engineering%20%281%29.docx)
+  and [MIT 18.001 calculus](./mathematics/mitres_18_001_gilbert%20strang.pdf).
+
+The interface applies those ideas to the code that exists now; these
+references do not imply that ingestion, AI teaching, adaptive tests, or video
+rendering are already implemented.

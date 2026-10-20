@@ -1,25 +1,59 @@
-"""A small exact-math workflow connecting rates, accumulation, and operators."""
+"""Run calculus and operator examples through the compiled math runtime."""
 
-from saemphysics.maths import definite_integral, differentiate, solve_linear_system
+from saemphysics.ir import SemanticIR, compile_request
+from saemphysics.runtime import execute_plan
 
 
 def main() -> None:
-    velocity = differentiate("2 + 3*t", variable="t")
-    displacement = definite_integral("2 + 3*t", "0", "4", variable="t")
-    linear_solution = solve_linear_system(
-        coefficients=[["2", "1"], ["1", "-1"]],
-        right_hand_side=["5", "1"],
+    velocity = execute_plan(
+        compile_request(
+            SemanticIR(
+                operation="differentiate",
+                question_id="cart-acceleration",
+                expression="2 + 3*t",
+                variable="t",
+            )
+        )
+    )
+    displacement = execute_plan(
+        compile_request(
+            SemanticIR(
+                operation="definite_integral",
+                question_id="cart-displacement",
+                expression="2 + 3*t",
+                variable="t",
+                lower_bound="0",
+                upper_bound="4",
+            )
+        )
+    )
+    linear_solution = execute_plan(
+        compile_request(
+            SemanticIR(
+                operation="solve_linear_system",
+                question_id="linear-operator",
+                coefficients=[["2", "1"], ["1", "-1"]],
+                right_hand_side=["5", "1"],
+            )
+        )
     )
 
-    print(f"Acceleration: d({velocity.expression})/dt = {velocity.derivative}")
+    print(
+        "Acceleration: "
+        f"d({velocity.result.expression})/dt = {velocity.result.derivative} "
+        f"[{velocity.verification.status}]"
+    )
     print(
         "Displacement from 0 s to 4 s: "
-        f"{displacement.value} m "
-        f"({len(displacement.checks)} checks passed)"
+        f"{displacement.result.value} m "
+        f"({displacement.verification.status}; "
+        f"{len(displacement.verification.checks)} checks)"
     )
     print(
         "Operator solve A*x=b: "
-        f"x={linear_solution.solution}; determinant={linear_solution.determinant}"
+        f"x={linear_solution.result.solution}; "
+        f"determinant={linear_solution.result.determinant} "
+        f"[{linear_solution.verification.status}]"
     )
 
 

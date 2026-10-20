@@ -49,6 +49,8 @@ def test_definite_integral_uses_exact_bounds_and_fundamental_theorem():
         "[x, 1]",
         "sin(x, x)",
         "x / 0",
+        "x**100000000",
+        "x**x",
     ],
 )
 def test_expression_parser_rejects_code_and_unsupported_syntax(expression):

@@ -1,0 +1,8 @@
+{
+  "operation": "solve_constant_acceleration",
+  "question_id": "synthetic-constant-acceleration-001",
+  "initial_velocity_m_s": "3",
+  "acceleration_m_s2": "2",
+  "time_s": "4",
+  "numeric_mode": "exact"
+}

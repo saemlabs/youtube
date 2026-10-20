@@ -1,5 +1,31 @@
 #### Build SaemPhysics as an exam-to-visual-explanation engine
 
+## Repository map
+
+- `src/saemphysics/`: typed models, exact solvers, compiler/runtime, and lesson pipeline.
+- `tests/`: mathematical, execution, and pipeline checks.
+- `examples/`: runnable examples and JSON requests.
+- `docs/`: uploaded reference material grouped by topic; see the [document index](./docs/README.md).
+- [Phased build roadmap](./docs/ROADMAP.md): monthly milestones and the current first task.
+- `prototypes/`: standalone browser prototypes that are not yet connected to the Python pipeline.
+
+Run a structured request through the verified Python backend:
+
+```bash
+python -m pip install -e .
+saemphysics run examples/requests/constant_acceleration.json
+```
+
+Use `-` as the request path to read JSON from standard input. Results are written
+as JSON to standard output; invalid requests are reported to standard error with
+a nonzero exit status.
+
+The unified student request interface is documented in
+[docs/INTERFACE.md](./docs/INTERFACE.md). Try it with
+`saemphysics interact examples/requests/student_solve.json`; it routes solve, practice, answer,
+explanation, and lesson-draft intents through the capabilities currently
+implemented, while clearly marking unsupported work.
+
 ## Working foundation
 
 The initial Python vertical slice defines a canonical question record, an exact
@@ -8,7 +34,7 @@ until both solver checks and human review pass and source rights are cleared.
 The sample in `examples/constant_acceleration_demo.py` is synthetic; it is not
 an exam question.
 
-The next slice follows `New Architecture - cos ai.PDF`'s immediate gap:
+The next slice follows the [new architecture paper](./docs/vision/New%20Architecture%20-%20cos%20ai.PDF)'s immediate gap:
 machine-independent Semantic IR → Execution IR → capability-checked planning →
 an explicit Python-backend Machine IR → execution → verification. Exact rational
 inputs remain exact, unsupported approximate execution is rejected, and each
@@ -52,8 +78,14 @@ behavior:
 These tools use a small AST-based arithmetic grammar rather than Python `eval`
 or unrestricted symbolic parsing. Inputs and outputs remain exact whenever
 the operation permits it. This is a tested math-library slice, not yet a new
-Semantic IR operation, general computer algebra system, numerical ODE engine,
-or automatic lesson generator.
+general computer algebra system, numerical ODE engine, or automatic lesson
+generator. Differentiation, definite integration, and exact linear-system
+solves now run through Semantic IR → Execution IR → the registered Python
+backend → checks, alongside the original constant-acceleration operation.
+`attach_verified_solution` connects a passing execution to its matching
+sourced question, requires explicit derivation text, and preserves check
+evidence for lesson compilation. The resulting lesson remains a draft; human
+question/lesson review and source-rights checks still control publication.
 
 Try the calculus/linear-algebra example:
 
@@ -61,22 +93,20 @@ Try the calculus/linear-algebra example:
 python examples/mathematics_demo.py
 ```
 
-The implementation is informed by the local [Feynman computation text](./computation-Richard_P._Feynman-Feynman_Lectures_on_Computation__-Addison-Wesley(1996).docx),
-[Strang's Computational Science and Engineering notes](./Gilbert%20Strang%20MIT%20Computational%20Science%20and%20Engineering%20(1).docx),
-[Strang's Calculus](./mitres_18_001_gilbert%20strang.pdf),
-the [MIT Python programming text](./Python%20programming%20mit.pdf), and
-[MIT 6.01's systems course text](./mit6_01scs11_textbook%20(1).pdf).
+The synthetic motion example shows the larger question → compiled solve →
+verified solution attachment → sourced lesson-draft flow. Replace its
+hand-authored teaching derivation with a teacher-reviewed explanation for real
+content; computed results do not generate or approve pedagogy.
 
-The other uploads are useful later, not prerequisites for this slice: the
-[C* guide](./CStarProgrammingGuide%20(1).pdf) studies shape-based data-parallel
-programming, the [C++ templates guide](./C%2B%2B%20Templates%20-%20The%20Complete%20Guide%20(Addison%20Wesley-2002).pdf)
-studies generic abstractions, [Napier's logarithm text](./Napier%20-%20construction%20of%20logarithm.pdf)
-provides historical mathematical context, and the quantum-algorithm material
-covers Fourier/phase-estimation and hidden-subgroup methods. These do not
-justify adding parallel or quantum backends before the ordinary math path is
-validated. The 14-page `algorithm for quantum computing.pdf` is image-only
-with no extractable text, so its contents were not used as implementation
-requirements.
+The implementation is informed by the uploaded computation, mathematical,
+physics, and programming references. They are now grouped in the [document
+index](./docs/README.md), which links to every source file and distinguishes
+the current design references from material reserved for later study. The
+quantum-algorithm material does not justify adding a quantum backend before
+the ordinary math path is validated. The 14-page
+[`algorithm for quantum computing.pdf`](./docs/quantum/algorithm%20for%20quantum%20computing.pdf)
+is image-only with no extractable text, so its contents were not used as
+implementation requirements.
 
 Set up and run the prototype with Python 3.10 or newer:
 
@@ -100,9 +130,9 @@ equations. Rendering still requires Manim's supported system libraries and
 FFmpeg. Inspect the preview at normal speed; a successful render does not
 replace physics, visual, or human review.
 
-The existing `Exam Forecaster 1.html` and `Mock Tester 1.html` remain standalone
-browser prototypes. This foundation does not yet connect them to the Python
-pipeline.
+The existing [Exam Forecaster](./prototypes/Exam%20Forecaster%201.html) and
+[Mock Tester](./prototypes/Mock%20Tester%201.html) remain standalone browser
+prototypes. This foundation does not yet connect them to the Python pipeline.
 
 Your goal is bigger than an AI that solves NEET, JEE, MIT, and Olympiad questions. You want a system that understands 30 years of exam questions, identifies the underlying mathematical and physical ideas, verifies the answer independently, and turns the reasoning into a 3Blue1Brown-inspired visual lesson.
 
